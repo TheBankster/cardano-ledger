@@ -2,6 +2,10 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
+{-# OPTIONS_GHC -Wno-deprecations #-}
+
+-- TODO Remove use of deprecated function testProperty
+
 module Test.Byron.Spec.Ledger.AbstractSize.Properties (testTxHasTypeReps) where
 
 import Byron.Spec.Ledger.Core hiding ((<|))

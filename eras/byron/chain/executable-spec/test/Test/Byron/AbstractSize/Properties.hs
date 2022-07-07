@@ -2,6 +2,10 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
+{-# OPTIONS_GHC -Wno-deprecations #-}
+
+-- TODO Remove use of deprecated function testProperty
+
 module Test.Byron.AbstractSize.Properties (testAbstractSize) where
 
 import Byron.Spec.Chain.STS.Block (Block (..), BlockBody (..), BlockHeader (..))

@@ -3,6 +3,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
+{-# OPTIONS_GHC -Wno-deprecations #-}
+
+-- TODO Remove use of deprecated function testProperty
+
 module Test.Byron.Spec.Ledger.Relation.Properties (testRelation) where
 
 import Byron.Spec.Ledger.Core hiding ((<|))

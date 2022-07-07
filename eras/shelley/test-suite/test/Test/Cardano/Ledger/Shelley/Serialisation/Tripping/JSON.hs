@@ -1,6 +1,10 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
+{-# OPTIONS_GHC -Wno-deprecations #-}
+
+-- TODO Remove use of deprecated function testProperty
+
 module Test.Cardano.Ledger.Shelley.Serialisation.Tripping.JSON
   ( tests,
 

@@ -104,7 +104,7 @@ class
 
   witsTxG :: SimpleGetter (Tx era) (Witnesses era)
 
-  auxiliaryDataTxG :: SimpleGetter (Tx era) (StrictMaybe (AuxiliaryData era))
+  auxDataTxG :: SimpleGetter (Tx era) (StrictMaybe (AuxiliaryData era))
 
   sizeTxG :: SimpleGetter (Tx era) Integer
 

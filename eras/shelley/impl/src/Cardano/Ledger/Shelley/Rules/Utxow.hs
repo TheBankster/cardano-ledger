@@ -556,7 +556,7 @@ validateMetadata ::
 validateMetadata pp tx =
   let txBody = tx ^. bodyTxG
       pv = getField @"_protocolVersion" pp
-   in case (txBody ^. adHashTxBodyG, tx ^. auxiliaryDataTxG) of
+   in case (txBody ^. adHashTxBodyG, tx ^. auxDataTxG) of
         (SNothing, SNothing) -> pure ()
         (SJust mdh, SNothing) -> failure $ MissingTxMetadata mdh
         (SNothing, SJust md') ->

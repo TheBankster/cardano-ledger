@@ -131,7 +131,7 @@ coreBodyBytes :: EraTx era => Tx era -> ByteString
 coreBodyBytes coretx = originalBytes $ coretx ^. bodyTxG
 
 coreAuxDataBytes :: EraTx era => Tx era -> StrictMaybe ByteString
-coreAuxDataBytes coretx = originalBytes <$> coretx ^. auxiliaryDataTxG
+coreAuxDataBytes coretx = originalBytes <$> coretx ^. auxDataTxG
 
 -- ===========================
 

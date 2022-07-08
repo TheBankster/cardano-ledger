@@ -30,7 +30,7 @@ module Cardano.Ledger.Shelley.Tx
       ),
     bodyShelleyTxL,
     witsShelleyTxL,
-    auxiliaryDataShelleyTxL,
+    auxDataShelleyTxL,
     sizeShelleyTxG,
     decodeWits,
     segwitTx,
@@ -196,13 +196,13 @@ witsShelleyTxL =
 
 -- | `AuxiliaryData` setter and getter for `ShelleyTx`. The setter will update
 -- memoized binary representation.
-auxiliaryDataShelleyTxL ::
+auxDataShelleyTxL ::
   ( ToCBOR (AuxiliaryData era),
     ToCBOR (Core.TxBody era),
     ToCBOR (Witnesses era)
   ) =>
   Lens' (ShelleyTx era) (StrictMaybe (AuxiliaryData era))
-auxiliaryDataShelleyTxL =
+auxDataShelleyTxL =
   lens
     (\(TxConstr (Memo tx _)) -> _auxiliaryData tx)
     ( \(TxConstr (Memo tx _)) auxData ->
@@ -220,7 +220,7 @@ instance CC.Crypto crypto => EraTx (ShelleyEra crypto) where
 
   witsTxG = witsShelleyTxL
 
-  auxiliaryDataTxG = auxiliaryDataShelleyTxL
+  auxDataTxG = auxDataShelleyTxL
 
   sizeTxG = sizeShelleyTxG
 

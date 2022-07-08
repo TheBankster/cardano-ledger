@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Cardano.Ledger.Shelley.Era (ShelleyEra) where
@@ -11,6 +12,7 @@ data ShelleyEra crypto
 
 instance CC.Crypto c => Era (ShelleyEra c) where
   type Crypto (ShelleyEra c) = c
+  type ProtVerLow (ShelleyEra c) = 2
 
 type instance Value (ShelleyEra _c) = Coin
 

@@ -56,6 +56,7 @@ import qualified Cardano.Ledger.Crypto as CC
 import Cardano.Ledger.Era (getTxOutAddr, getTxOutBootstrapAddress)
 import Cardano.Ledger.Keys (GenDelegs, KeyHash, KeyRole (..))
 import Cardano.Ledger.Rules.ValidationMode (Inject (..), Test, runTest)
+import Cardano.Ledger.Shelley.Era (ShelleyEra)
 import Cardano.Ledger.Shelley.LedgerState.IncrementalStake
 import Cardano.Ledger.Shelley.LedgerState.Types
   ( UTxOState (..),
@@ -63,7 +64,7 @@ import Cardano.Ledger.Shelley.LedgerState.Types
 import Cardano.Ledger.Shelley.PParams
   ( PPUPState (..),
     ShelleyPParams,
-    ShelleyPParamsHKD(..),
+    ShelleyPParamsHKD (..),
     Update,
   )
 import Cardano.Ledger.Shelley.Rules.Ppup
@@ -298,6 +299,7 @@ instance
 instance
   ( EraTx era,
     ShelleyEraTxBody era,
+    ProtVerInEra era (ShelleyEra c),
     TxOut era ~ ShelleyTxOut era,
     Show (Value era),
     Show (Witnesses era),
@@ -352,9 +354,10 @@ instance
     ]
 
 utxoInductive ::
-  forall era utxo.
+  forall era utxo c.
   ( EraTx era,
     ShelleyEraTxBody era,
+    ProtVerInEra era (ShelleyEra c),
     TxOut era ~ ShelleyTxOut era,
     STS (utxo era),
     Embed (EraRule "PPUP" era) (utxo era),
@@ -428,7 +431,7 @@ utxoInductive = do
 --
 -- > txttl txb ≥ slot
 validateTimeToLive ::
-  ShelleyEraTxBody era =>
+  (ShelleyEraTxBody era, ProtVerInEra era (ShelleyEra c)) =>
   TxBody era ->
   SlotNo ->
   Test (UtxoPredicateFailure era)

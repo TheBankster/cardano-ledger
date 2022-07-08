@@ -333,7 +333,7 @@ instance
   where
   wdrlsTxBodyG = to (\(TxBodyConstr (Memo m _)) -> wdrls m)
 
-  ttlTxBodyG = undefined -- FIXME: restrict at the type level.
+  ttlTxBodyG = notSupportedInThisEra
 
   updateTxBodyG = to (\(TxBodyConstr (Memo m _)) -> update m)
 

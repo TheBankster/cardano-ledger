@@ -9,6 +9,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 -- | This module defines core type families which we know to vary from era to
@@ -41,8 +42,16 @@ module Cardano.Ledger.Core
     ValidateScript (..),
     -- $segWit
     SupportsSegWit (..),
+
+    -- * Protocol version constraints
+    ProtVerAtLeast,
+    ProtVerAtMost,
+    ProtVerInBounds,
+    ProtVerInEra,
+    notSupportedInThisEra,
+
     -- * Re-exports
-    module Cardano.Ledger.Hashes
+    module Cardano.Ledger.Hashes,
   )
 where
 
@@ -69,7 +78,7 @@ import Control.DeepSeq (NFData)
 import Control.Monad.Except (Except, runExcept)
 import qualified Data.ByteString as BS
 import Data.Coerce (Coercible, coerce)
-import Data.Kind (Type)
+import Data.Kind (Constraint, Type)
 import Data.Map (Map)
 import Data.Maybe (fromMaybe)
 import Data.Maybe.Strict (StrictMaybe)
@@ -78,15 +87,23 @@ import Data.Set (Set)
 import Data.Typeable (Typeable)
 import Data.Void (Void, absurd)
 import Data.Word (Word64)
-import GHC.TypeLits (Symbol)
+import GHC.Stack
+import GHC.TypeLits
 import Lens.Micro
 
 --------------------------------------------------------------------------------
 -- Era
 --------------------------------------------------------------------------------
 
-class (CC.Crypto (Crypto era), Typeable era) => Era era where
+class (CC.Crypto (Crypto era), Typeable era, ProtVerLow era <= ProtVerHigh era) => Era era where
   type Crypto era :: Type
+
+  -- | Lowest major protocol version for this era
+  type ProtVerLow era :: Nat
+
+  -- | Highest major protocol version for this era. By default se to `ProtVerLow`
+  type ProtVerHigh era :: Nat
+  type ProtVerHigh era = ProtVerLow era
 
 -- | A transaction.
 class
@@ -248,8 +265,8 @@ class
   applyPPUpdates :: PParams era -> PParamsUpdate era -> PParams era
 
 type PParamsDelta era = PParamsUpdate era
-{-# DEPRECATED PParamsDelta "Use `PParamsUpdate` instead" #-}
 
+{-# DEPRECATED PParamsDelta "Use `PParamsUpdate` instead" #-}
 
 -- | The set of witnesses in a Tx
 class Era era => EraWitnesses era where
@@ -414,3 +431,38 @@ translateEraMaybe ::
   Maybe (f era)
 translateEraMaybe ctxt =
   either (const Nothing) Just . runExcept . translateEra ctxt
+
+
+-----------------------------
+-- Protocol version bounds --
+-----------------------------
+
+
+type family ProtVerIsInBounds (check :: Symbol) era (v :: Nat) (b :: Bool) :: Constraint where
+  ProtVerIsInBounds check era v 'True = ()
+  ProtVerIsInBounds check era v 'False =
+    TypeError
+      ( 'ShowType era
+          ':<>: 'Text " protocol version bounds are: ["
+          ':<>: 'ShowType (ProtVerLow era)
+          ':<>: 'Text ", "
+          ':<>: 'ShowType (ProtVerHigh era)
+          ':<>: 'Text "], but required is at "
+          ':<>: 'Text check
+          ':<>: 'Text " "
+          ':<>: 'ShowType v
+      )
+
+type family ProtVerAtLeast era (l :: Nat) :: Constraint where
+  ProtVerAtLeast era l = ProtVerIsInBounds "least" era l (ProtVerLow era <=? l)
+
+type family ProtVerAtMost era (h :: Nat) :: Constraint where
+  ProtVerAtMost era h = ProtVerIsInBounds "most" era h (h <=? ProtVerHigh era)
+
+type ProtVerInBounds era l h = (ProtVerAtLeast era l, ProtVerAtMost era h)
+
+type ProtVerInEra era inEra = ProtVerInBounds era (ProtVerLow inEra) (ProtVerHigh inEra)
+
+
+notSupportedInThisEra :: HasCallStack => a
+notSupportedInThisEra = error "Impossible: Function is not supported in this era"

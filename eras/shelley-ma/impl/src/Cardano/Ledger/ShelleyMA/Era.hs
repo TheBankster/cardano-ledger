@@ -88,6 +88,15 @@ instance CC.Crypto c => MAClass 'Allegra c where
 --   provides the era-specific code for where they differ.
 instance MAClass ma crypto => Era (ShelleyMAEra ma crypto) where
   type Crypto (ShelleyMAEra ma crypto) = crypto
+  type ProtVerLow (ShelleyMAEra ma crypto) = 3
+  type ProtVerHigh (ShelleyMAEra ma crypto) = 4
+
+-- We could be more specific about protcol version on per Mary and Allegra eras
+-- with a type function, but there aren't any functions that can't work for both
+-- eras
+-- type family MAProtVer (ma :: MaryOrAllegra) :: Nat where
+--   MAProtVer 'Mary = 3
+--   MAProtVer 'Allegra = 4
 
 --------------------------------------------------------------------------------
 -- Core instances

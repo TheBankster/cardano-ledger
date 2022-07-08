@@ -97,7 +97,7 @@ instance MAClass ma crypto => Era (ShelleyMAEra ma crypto) where
   type ProtVerHigh (ShelleyMAEra ma crypto) = 4
 
 -- We could be more specific about protocol version on per Mary and Allegra eras
--- with a type function, but there aren't any functions that can't work for both
+-- with a type function, but there are no functions that can't work for both
 -- eras at the same time
 --
 -- type family MAProtVer (ma :: MaryOrAllegra) :: Nat where

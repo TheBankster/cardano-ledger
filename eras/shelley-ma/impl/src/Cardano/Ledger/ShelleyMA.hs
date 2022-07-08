@@ -2,7 +2,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -27,9 +26,12 @@ module Cardano.Ledger.ShelleyMA
   )
 where
 
-import Cardano.Ledger.Core hiding (AuxiliaryData, PParams, Tx, TxBody, TxOut)
+import Cardano.Ledger.Core
+  ( EraTx (auxDataTxL, bodyTxL, mkBasicTx, sizeTxG, witsTxL),
+    SupportsSegWit (..),
+    ValidateScript (scriptPrefixTag, validateScript),
+  )
 import qualified Cardano.Ledger.Core as Core (Tx)
-import Cardano.Ledger.Shelley (nativeMultiSigTag)
 import Cardano.Ledger.Shelley.BlockChain (ShelleyTxSeq (..))
 import qualified Cardano.Ledger.Shelley.BlockChain as Shelley
   ( bbHash,
@@ -44,6 +46,7 @@ import Cardano.Ledger.Shelley.Tx
     auxDataShelleyTxL,
     bodyShelleyTxL,
     mkBasicShelleyTx,
+    nativeMultiSigTag,
     sizeShelleyTxG,
     witsShelleyTxL,
   )

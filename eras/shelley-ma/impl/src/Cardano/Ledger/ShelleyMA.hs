@@ -41,7 +41,7 @@ import Cardano.Ledger.Shelley.Tx
     ShelleyTxOut,
     Tx,
     TxOut,
-    auxiliaryDataShelleyTxL,
+    auxDataShelleyTxL,
     bodyShelleyTxL,
     sizeShelleyTxG,
     witsShelleyTxL,
@@ -59,7 +59,7 @@ instance MAClass ma crypto => EraTx (ShelleyMAEra ma crypto) where
 
   witsTxG = witsShelleyTxL
 
-  auxiliaryDataTxG = auxiliaryDataShelleyTxL
+  auxDataTxG = auxDataShelleyTxL
 
   sizeTxG = sizeShelleyTxG
 

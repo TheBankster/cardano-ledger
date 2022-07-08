@@ -117,11 +117,13 @@ class
   where
   type Tx era = (r :: Type) | r -> era
 
-  bodyTxG :: SimpleGetter (Tx era) (TxBody era)
+  mkBasicTx :: TxBody era -> Tx era
 
-  witsTxG :: SimpleGetter (Tx era) (Witnesses era)
+  bodyTxG :: Lens' (Tx era) (TxBody era)
 
-  auxDataTxG :: SimpleGetter (Tx era) (StrictMaybe (AuxiliaryData era))
+  witsTxG :: Lens' (Tx era) (Witnesses era)
+
+  auxDataTxG :: Lens' (Tx era) (StrictMaybe (AuxiliaryData era))
 
   sizeTxG :: SimpleGetter (Tx era) Integer
 
@@ -138,17 +140,19 @@ class
   -- | The body of a transaction.
   type TxBody era = (r :: Type) | r -> era
 
-  inputsTxBodyG :: SimpleGetter (TxBody era) (Set (TxIn (Crypto era)))
+  mkBasicTxBody :: TxBody era
 
-  outputsTxBodyG :: SimpleGetter (TxBody era) (StrictSeq (TxOut era))
+  inputsTxBodyG :: Lens' (TxBody era) (Set (TxIn (Crypto era)))
 
-  txFeeTxBodyG :: SimpleGetter (TxBody era) Coin
+  outputsTxBodyG :: Lens' (TxBody era) (StrictSeq (TxOut era))
 
-  mintedTxBodyG :: SimpleGetter (TxBody era) (Set (ScriptHash (Crypto era)))
+  txFeeTxBodyG :: Lens' (TxBody era) Coin
 
-  allInputsTxBodyG :: SimpleGetter (TxBody era) (Set (TxIn (Crypto era)))
+  mintedTxBodyG :: Lens' (TxBody era) (Set (ScriptHash (Crypto era)))
 
-  adHashTxBodyG :: SimpleGetter (TxBody era) (StrictMaybe (AuxiliaryDataHash (Crypto era)))
+  allInputsTxBodyG :: Lens' (TxBody era) (Set (TxIn (Crypto era)))
+
+  adHashTxBodyG :: Lens' (TxBody era) (StrictMaybe (AuxiliaryDataHash (Crypto era)))
 
 -- | Abstract interface into specific fields of a `TxOut`
 class
@@ -271,11 +275,11 @@ type PParamsDelta era = PParamsUpdate era
 -- | The set of witnesses in a Tx
 class Era era => EraWitnesses era where
   type Witnesses era = (r :: Type) | r -> era
-  addrWitsG :: SimpleGetter (Witnesses era) (Set (WitVKey 'Witness (Crypto era)))
+  addrWitsG :: Lens' (Witnesses era) (Set (WitVKey 'Witness (Crypto era)))
 
-  bootAddrWitsG :: SimpleGetter (Witnesses era) (Set (BootstrapWitness (Crypto era)))
+  bootAddrWitsG :: Lens' (Witnesses era) (Set (BootstrapWitness (Crypto era)))
 
-  scriptWitsG :: SimpleGetter (Witnesses era) (Map (ScriptHash (Crypto era)) (Script era))
+  scriptWitsG :: Lens' (Witnesses era) (Map (ScriptHash (Crypto era)) (Script era))
 
 -- | Era STS map
 type family EraRule (k :: Symbol) era :: Type

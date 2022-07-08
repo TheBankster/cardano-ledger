@@ -46,6 +46,9 @@ module Cardano.Ledger.Shelley.Tx
         scriptWits,
         txWitsBytes
       ),
+    scriptShelleyWitsL,
+    addrShelleyWitsL,
+    bootAddrShelleyWitsL,
     txwitsScript,
     extractKeyHashWitnessSet,
     addrWits',
@@ -168,7 +171,7 @@ type Tx era = ShelleyTx era
 
 {-# DEPRECATED Tx "Use `ShelleyTx` instead" #-}
 
--- | `Core.TxBody` setter and getter for `ShelleyTx`. The setter will update
+-- | `Core.TxBody` setter and getter for `ShelleyTx`. The setter does update
 -- memoized binary representation.
 bodyShelleyTxL ::
   ( ToCBOR (AuxiliaryData era),
@@ -181,7 +184,7 @@ bodyShelleyTxL =
     (\(TxConstr (Memo tx _)) -> _body tx)
     (\(TxConstr (Memo tx _)) txBody -> TxConstr $ memoBytes $ encodeTxRaw $ tx {_body = txBody})
 
--- | `Witnesses` setter and getter for `ShelleyTx`. The setter will update
+-- | `Witnesses` setter and getter for `ShelleyTx`. The setter does update
 -- memoized binary representation.
 witsShelleyTxL ::
   ( ToCBOR (AuxiliaryData era),
@@ -194,7 +197,7 @@ witsShelleyTxL =
     (\(TxConstr (Memo tx _)) -> _wits tx)
     (\(TxConstr (Memo tx _)) txWits -> TxConstr $ memoBytes $ encodeTxRaw $ tx {_wits = txWits})
 
--- | `AuxiliaryData` setter and getter for `ShelleyTx`. The setter will update
+-- | `AuxiliaryData` setter and getter for `ShelleyTx`. The setter does update
 -- memoized binary representation.
 auxDataShelleyTxL ::
   ( ToCBOR (AuxiliaryData era),
@@ -379,14 +382,35 @@ type WitnessSet = WitnessSetHKD Identity
 
 type ShelleyWitnesses = WitnessSetHKD Identity
 
+-- | Script witness setter and getter for `ShelleyWitnesses`. The
+-- setter does update memoized binary representation.
+scriptShelleyWitsL ::
+  (Era era, ToCBOR (Script era)) =>
+  Lens' (ShelleyWitnesses era) (Map (ScriptHash (Crypto era)) (Script era))
+scriptShelleyWitsL = lens scriptWits' (\w s -> w {scriptWits = s})
+
+-- | Addresses witness setter and getter for `ShelleyWitnesses`. The
+-- setter does update memoized binary representation.
+addrShelleyWitsL ::
+  (Era era, ToCBOR (Script era)) =>
+  Lens' (ShelleyWitnesses era) (Set (WitVKey 'Witness (Crypto era)))
+addrShelleyWitsL = lens addrWits' (\w s -> w {addrWits = s})
+
+-- | Bootstrap Addresses witness setter and getter for `ShelleyWitnesses`. The
+-- setter does update memoized binary representation.
+bootAddrShelleyWitsL ::
+  (Era era, ToCBOR (Script era)) =>
+  Lens' (ShelleyWitnesses era) (Set (BootstrapWitness (Crypto era)))
+bootAddrShelleyWitsL = lens bootWits' (\w s -> w {bootWits = s})
+
 instance CC.Crypto crypto => EraWitnesses (ShelleyEra crypto) where
   type Witnesses (ShelleyEra crypto) = ShelleyWitnesses (ShelleyEra crypto)
 
-  scriptWitsG = to scriptWits'
+  scriptWitsG = scriptShelleyWitsL
 
-  addrWitsG = to addrWits'
+  addrWitsG = addrShelleyWitsL
 
-  bootAddrWitsG = to bootWits'
+  bootAddrWitsG = bootAddrShelleyWitsL
 
 instance Era era => ToCBOR (WitnessSetHKD Identity era) where
   toCBOR = encodePreEncoded . BSL.toStrict . txWitsBytes
@@ -442,8 +466,8 @@ pattern WitnessSet ::
   Set (BootstrapWitness (Crypto era)) ->
   WitnessSet era
 pattern WitnessSet a s b = ShelleyWitnesses a s b
-{-# COMPLETE WitnessSet #-}
 
+{-# COMPLETE WitnessSet #-}
 
 instance SafeToHash (WitnessSetHKD Identity era) where
   originalBytes = BSL.toStrict . txWitsBytes

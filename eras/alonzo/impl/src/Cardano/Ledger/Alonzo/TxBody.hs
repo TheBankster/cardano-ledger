@@ -18,14 +18,15 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ViewPatterns #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module Cardano.Ledger.Alonzo.TxBody
-  ( TxOut (.., TxOut, TxOutCompact, TxOutCompactDH),
+  ( AlonzoTxOut (.., AlonzoTxOut, TxOutCompact, TxOutCompactDH),
     -- Constructors are not exported for safety:
     Addr28Extra,
     DataHash32,
-    TxBody
-      ( TxBody,
+    AlonzoTxBody
+      ( AlonzoTxBody,
         inputs,
         collateral,
         outputs,
@@ -60,10 +61,13 @@ module Cardano.Ledger.Alonzo.TxBody
     decodeAddress28,
     viewCompactTxOut,
     viewTxOut,
-    AlonzoBody,
     EraIndependentScriptIntegrity,
     ScriptIntegrityHash,
     getAlonzoTxOutEitherAddr,
+
+    -- * Deprecated
+    TxOut,
+    TxBody,
   )
 where
 
@@ -78,6 +82,8 @@ import Cardano.Binary
 import Cardano.Crypto.Hash
 import Cardano.Ledger.Address (Addr (..))
 import Cardano.Ledger.Alonzo.Data (AuxiliaryDataHash (..), DataHash)
+import Cardano.Ledger.Alonzo.Era
+import Cardano.Ledger.Alonzo.PParams ()
 import Cardano.Ledger.Alonzo.Scripts (Script)
 import Cardano.Ledger.BaseTypes
   ( Network (..),
@@ -92,7 +98,7 @@ import Cardano.Ledger.CompactAddress
     fromCborBackwardsBothAddr,
   )
 import Cardano.Ledger.Compactible
-import Cardano.Ledger.Core (PParamsDelta)
+import Cardano.Ledger.Core hiding (TxBody, TxOut)
 import qualified Cardano.Ledger.Core as Core
 import Cardano.Ledger.Credential (Credential (..), PaymentCredential, StakeReference (..))
 import qualified Cardano.Ledger.Crypto as CC
@@ -102,7 +108,7 @@ import Cardano.Ledger.Hashes
     EraIndependentTxBody,
   )
 import Cardano.Ledger.Keys (KeyHash (..), KeyRole (..))
-import Cardano.Ledger.Mary.Value (Value (..), policies, policyID)
+import Cardano.Ledger.Mary.Value (MaryValue (..), policies, policyID)
 import qualified Cardano.Ledger.Mary.Value as Mary
 import Cardano.Ledger.SafeHash
   ( HashAnnotated,
@@ -114,8 +120,9 @@ import Cardano.Ledger.SafeHash
 import Cardano.Ledger.Shelley.Delegation.Certificates (DCert)
 import Cardano.Ledger.Shelley.PParams (Update)
 import Cardano.Ledger.Shelley.Scripts (ScriptHash (..))
-import Cardano.Ledger.Shelley.TxBody (Wdrl (Wdrl), unWdrl)
+import Cardano.Ledger.Shelley.TxBody (ShelleyEraTxBody (..), Wdrl (Wdrl), unWdrl)
 import Cardano.Ledger.ShelleyMA.Timelocks (ValidityInterval (..))
+import Cardano.Ledger.ShelleyMA.TxBody (ShelleyMAEraTxBody (..))
 import Cardano.Ledger.TxIn (TxIn (..))
 import Cardano.Ledger.Val
   ( DecodeNonNegative,
@@ -142,6 +149,7 @@ import GHC.Generics (Generic)
 import GHC.Records (HasField (..))
 import GHC.Stack (HasCallStack)
 import GHC.TypeLits
+import Lens.Micro
 import NoThunks.Class (InspectHeapNamed (..), NoThunks)
 import Prelude hiding (lookup)
 
@@ -161,7 +169,7 @@ data DataHash32
       {-# UNPACK #-} !Word64 -- DataHash
   deriving (Eq)
 
-data TxOut era
+data AlonzoTxOut era
   = TxOutCompact'
       {-# UNPACK #-} !(CompactAddr (Crypto era))
       !(CompactForm (Core.Value era))
@@ -179,14 +187,18 @@ data TxOut era
       {-# UNPACK #-} !(CompactForm Coin) -- Ada value
       {-# UNPACK #-} !DataHash32
 
+type TxOut era = AlonzoTxOut era
+
+{-# DEPRECATED TxOut "Use `AlonzoTxOut` instead" #-}
+
 deriving stock instance
   ( Eq (Core.Value era),
     Compactible (Core.Value era)
   ) =>
-  Eq (TxOut era)
+  Eq (AlonzoTxOut era)
 
 -- | Already in NF
-instance NFData (TxOut era) where
+instance NFData (AlonzoTxOut era) where
   rnf = rwhnf
 
 getAdaOnly ::
@@ -269,9 +281,8 @@ encodeDataHash32 dataHash = do
     _ -> Nothing
 
 viewCompactTxOut ::
-  forall era.
-  Era era =>
-  TxOut era ->
+  EraTxOut era =>
+  AlonzoTxOut era ->
   (CompactAddr (Crypto era), CompactForm (Core.Value era), StrictMaybe (DataHash (Crypto era)))
 viewCompactTxOut txOut = case txOut of
   TxOutCompact' addr val -> (addr, val, SNothing)
@@ -287,9 +298,8 @@ viewCompactTxOut txOut = case txOut of
     | otherwise -> error addressErrorMsg
 
 viewTxOut ::
-  forall era.
-  Era era =>
-  TxOut era ->
+  EraTxOut era =>
+  AlonzoTxOut era ->
   (Addr (Crypto era), Core.Value era, StrictMaybe (DataHash (Crypto era)))
 viewTxOut (TxOutCompact' bs c) = (addr, val, SNothing)
   where
@@ -310,49 +320,96 @@ viewTxOut TxOut_AddrHash28_AdaOnly {} = error addressErrorMsg
 viewTxOut TxOut_AddrHash28_AdaOnly_DataHash32 {} = error addressErrorMsg
 
 instance
-  ( Era era,
+  ( EraTxOut era,
     Show (Core.Value era),
     Show (CompactForm (Core.Value era))
   ) =>
-  Show (TxOut era)
+  Show (AlonzoTxOut era)
   where
-  show = show . viewTxOut
+  show = show . viewTxOut -- FIXME: showing tuple is ugly
 
-deriving via InspectHeapNamed "TxOut" (TxOut era) instance NoThunks (TxOut era)
+deriving via InspectHeapNamed "AlonzoTxOut" (AlonzoTxOut era) instance NoThunks (AlonzoTxOut era)
 
-pattern TxOut ::
+pattern AlonzoTxOut ::
   forall era.
-  ( Era era,
-    Compactible (Core.Value era),
-    Val (Core.Value era),
-    HasCallStack
-  ) =>
+  (EraTxOut era, HasCallStack) =>
   Addr (Crypto era) ->
   Core.Value era ->
   StrictMaybe (DataHash (Crypto era)) ->
-  TxOut era
-pattern TxOut addr vl dh <-
+  AlonzoTxOut era
+pattern AlonzoTxOut addr vl dh <-
   (viewTxOut -> (addr, vl, dh))
   where
-    TxOut (Addr network paymentCred stakeRef) vl SNothing
+    AlonzoTxOut (Addr network paymentCred stakeRef) vl SNothing
       | StakeRefBase stakeCred <- stakeRef,
         Just adaCompact <- getAdaOnly (Proxy @era) vl,
         Just (Refl, addr28Extra) <- encodeAddress28 network paymentCred =
           TxOut_AddrHash28_AdaOnly stakeCred addr28Extra adaCompact
-    TxOut (Addr network paymentCred stakeRef) vl (SJust dh)
+    AlonzoTxOut (Addr network paymentCred stakeRef) vl (SJust dh)
       | StakeRefBase stakeCred <- stakeRef,
         Just adaCompact <- getAdaOnly (Proxy @era) vl,
         Just (Refl, addr28Extra) <- encodeAddress28 network paymentCred,
         Just (Refl, dataHash32) <- encodeDataHash32 dh =
           TxOut_AddrHash28_AdaOnly_DataHash32 stakeCred addr28Extra adaCompact dataHash32
-    TxOut addr vl mdh =
+    AlonzoTxOut addr vl mdh =
       let v = fromMaybe (error "Illegal value in txout") $ toCompact vl
           a = compactAddr addr
        in case mdh of
             SNothing -> TxOutCompact' a v
             SJust dh -> TxOutCompactDH' a v dh
 
-{-# COMPLETE TxOut #-}
+{-# COMPLETE AlonzoTxOut #-}
+
+instance CC.Crypto crypto => EraTxOut (AlonzoEra crypto) where
+  type TxOut (AlonzoEra crypto) = AlonzoTxOut (AlonzoEra crypto)
+
+  mkBasicTxOut addr vl = AlonzoTxOut addr vl SNothing
+
+  addrEitherTxOutL = addrEitherAlonzoTxOutL
+
+  valueEitherTxOutL = valueEitherAlonzoTxOutL
+
+addrEitherAlonzoTxOutL ::
+  (EraTxOut era, HasCallStack) =>
+  Lens' (AlonzoTxOut era) (Either (Addr (Crypto era)) (CompactAddr (Crypto era)))
+addrEitherAlonzoTxOutL =
+  lens
+    getAlonzoTxOutEitherAddr
+    ( \txOut eAddr ->
+        let cVal = getTxOutCompactValue txOut
+            (_, _, dh) = viewTxOut txOut
+         in case eAddr of
+              Left addr -> mkTxOutCompact addr (compactAddr addr) cVal dh
+              Right cAddr -> mkTxOutCompact (decompactAddr cAddr) cAddr cVal dh
+    )
+
+getTxOutCompactValue :: EraTxOut era => AlonzoTxOut era -> CompactForm (Core.Value era)
+getTxOutCompactValue =
+  \case
+    TxOutCompact' _ cv -> cv
+    TxOutCompactDH' _ cv _ -> cv
+    TxOut_AddrHash28_AdaOnly _ _ cc -> injectCompact cc
+    TxOut_AddrHash28_AdaOnly_DataHash32 _ _ cc _ -> injectCompact cc
+
+valueEitherAlonzoTxOutL ::
+  forall era .EraTxOut era =>
+  Lens' (AlonzoTxOut era) (Either (Value era) (CompactForm (Value era)))
+valueEitherAlonzoTxOutL =
+  lens
+    (Right . getTxOutCompactValue)
+    ( \txOut eVal ->
+        let (addr, _, dh) = viewTxOut txOut
+         in case eVal of
+              Left val -> AlonzoTxOut addr val dh
+              --Right cVal -> mkTxOutCompact addr (compactAddr addr) cVal dh
+              Right cVal ->
+                case getAlonzoTxOutEitherAddr txOut of
+                  --case txOut ^. addrEitherTxOutL of
+                  Left _addr -> mkTxOutCompact addr (compactAddr addr) cVal dh
+    )
+
+getTxOutCompact :: EraTxOut era => Core.TxOut era -> CompactAddr (Crypto era)
+getTxOutCompact txOut = txOut ^. compactAddrTxOutL
 
 -- ======================================
 
@@ -361,14 +418,14 @@ type ScriptIntegrityHash crypto = SafeHash crypto EraIndependentScriptIntegrity
 data TxBodyRaw era = TxBodyRaw
   { _inputs :: !(Set (TxIn (Crypto era))),
     _collateral :: !(Set (TxIn (Crypto era))),
-    _outputs :: !(StrictSeq (TxOut era)),
+    _outputs :: !(StrictSeq (AlonzoTxOut era)),
     _certs :: !(StrictSeq (DCert (Crypto era))),
     _wdrls :: !(Wdrl (Crypto era)),
     _txfee :: !Coin,
     _vldt :: !ValidityInterval,
     _update :: !(StrictMaybe (Update era)),
     _reqSignerHashes :: Set (KeyHash 'Witness (Crypto era)),
-    _mint :: !(Value (Crypto era)),
+    _mint :: !(MaryValue (Crypto era)),
     -- The spec makes it clear that the mint field is a
     -- Cardano.Ledger.Mary.Value.Value, not a Core.Value.
     -- Operations on the TxBody in the AlonzoEra depend upon this.
@@ -382,89 +439,151 @@ deriving instance
   ( Eq (Core.Value era),
     CC.Crypto (Crypto era),
     Compactible (Core.Value era),
-    Eq (PParamsDelta era)
+    Eq (PParamsUpdate era)
   ) =>
   Eq (TxBodyRaw era)
 
 instance
-  (Typeable era, NoThunks (Core.Value era), NoThunks (PParamsDelta era)) =>
+  (Typeable era, NoThunks (Core.Value era), NoThunks (PParamsUpdate era)) =>
   NoThunks (TxBodyRaw era)
 
 instance
-  (CC.Crypto (Crypto era), Typeable era, NFData (Core.Value era), NFData (PParamsDelta era)) =>
+  (CC.Crypto (Crypto era), Typeable era, NFData (Core.Value era), NFData (PParamsUpdate era)) =>
   NFData (TxBodyRaw era)
 
-deriving instance
-  ( Era era,
-    Show (Core.Value era),
-    Show (PParamsDelta era)
-  ) =>
-  Show (TxBodyRaw era)
+deriving instance (EraTxOut era, Show (PParamsUpdate era)) => Show (TxBodyRaw era)
 
-newtype TxBody era = TxBodyConstr (MemoBytes (TxBodyRaw era))
+newtype AlonzoTxBody era = TxBodyConstr (MemoBytes (TxBodyRaw era))
   deriving (ToCBOR)
   deriving newtype (SafeToHash)
 
-deriving newtype instance CC.Crypto (Crypto era) => Eq (TxBody era)
+type TxBody era = AlonzoTxBody era
+
+{-# DEPRECATED TxBody "Use `AlonzoTxBody` instead" #-}
+
+lensTxBodyRaw ::
+  ( EraTxBody era,
+    -- EncodeMint (Value era),
+    Functor f,
+    ToCBOR (PParamsUpdate era)
+  ) =>
+  (TxBodyRaw e -> a) ->
+  (TxBodyRaw e -> t -> TxBodyRaw era) ->
+  (a -> f t) ->
+  AlonzoTxBody e ->
+  f (AlonzoTxBody era)
+lensTxBodyRaw getter setter =
+  lens
+    (\(TxBodyConstr (Memo txBodyRaw _)) -> getter txBodyRaw)
+    (\(TxBodyConstr (Memo txBodyRaw _)) val -> mkAlonzoTxBody $ setter txBodyRaw val)
+
+-- instance CC.Crypto c => EraTxBody (AlonzoEra c) where
+--   type TxBody (AlonzoEra c) = AlonzoTxBody (AlonzoEra c)
+
+--   mkBasicTxBody = mkAlonzoTxBody initial
+
+--   inputsTxBodyL =
+--     lensTxBodyRaw _inputs (\txBodyRaw inputs_ -> txBodyRaw {_inputs = inputs_})
+
+{-
+  outputsTxBodyL =
+    lensTxBodyRaw outputs (\txBodyRaw outputs_ -> txBodyRaw {outputs = outputs_})
+
+  feeTxBodyL =
+    lensTxBodyRaw txfee (\txBodyRaw fee_ -> txBodyRaw {txfee = fee_})
+
+  auxDataHashTxBodyL =
+    lensTxBodyRaw adHash (\txBodyRaw auxDataHash -> txBodyRaw {adHash = auxDataHash})
+
+  allInputsTxBodyG = inputsTxBodyL
+
+  mintedTxBodyG =
+    to (\(TxBodyConstr (Memo txBodyRaw _)) -> getScriptHash (Proxy @ma) (mint txBodyRaw))
+
+instance
+  ( MAClass ma crypto,
+    FromCBOR (PParamsUpdate (ShelleyMAEra ma crypto)),
+    NFData (PParamsUpdate (ShelleyMAEra ma crypto))
+  ) =>
+  ShelleyEraTxBody (ShelleyMAEra ma crypto)
+  where
+  wdrlsTxBodyL =
+    lensTxBodyRaw wdrls (\txBodyRaw wdrls_ -> txBodyRaw {wdrls = wdrls_})
+
+  ttlTxBodyL = notSupportedInThisEraL
+
+  updateTxBodyL =
+    lensTxBodyRaw update (\txBodyRaw update_ -> txBodyRaw {update = update_})
+
+  certsTxBodyL =
+    lensTxBodyRaw certs (\txBodyRaw certs_ -> txBodyRaw {certs = certs_})
+
+instance
+  ( MAClass ma crypto,
+    FromCBOR (PParamsUpdate (ShelleyMAEra ma crypto)),
+    EncodeMint (MAValue ma crypto),
+    DecodeMint (MAValue ma crypto),
+    NFData (PParamsUpdate (ShelleyMAEra ma crypto))
+  ) =>
+  ShelleyMAEraTxBody (ShelleyMAEra ma crypto)
+  where
+  vldtTxBodyL =
+    lensTxBodyRaw vldt (\txBodyRaw vldt_ -> txBodyRaw {vldt = vldt_})
+
+  mintTxBodyL =
+    lensTxBodyRaw mint (\txBodyRaw mint_ -> txBodyRaw {mint = mint_})
+-}
+
+class ShelleyMAEraTxBody era => AlonzoEraTxBody era
+
+-- vldtTxBodyL :: Lens' (Core.TxBody era) ValidityInterval
+
+-- mintTxBodyL :: Lens' (Core.TxBody era) (Value era)
+
+deriving newtype instance CC.Crypto (Crypto era) => Eq (AlonzoTxBody era)
 
 deriving instance
   ( Typeable era,
     NoThunks (Core.Value era),
-    NoThunks (PParamsDelta era)
+    NoThunks (PParamsUpdate era)
   ) =>
-  NoThunks (TxBody era)
+  NoThunks (AlonzoTxBody era)
 
 deriving instance
-  (CC.Crypto (Crypto era), Typeable era, NFData (Core.Value era), NFData (PParamsDelta era)) =>
-  NFData (TxBody era)
+  (CC.Crypto (Crypto era), Typeable era, NFData (Core.Value era), NFData (PParamsUpdate era)) =>
+  NFData (AlonzoTxBody era)
 
-deriving instance
-  ( Era era,
-    Compactible (Core.Value era),
-    Show (Core.Value era),
-    Show (PParamsDelta era)
-  ) =>
-  Show (TxBody era)
+deriving instance (EraTxOut era, Show (PParamsUpdate era)) => Show (AlonzoTxBody era)
 
 deriving via
   (Mem (TxBodyRaw era))
   instance
-    ( Era era,
+    ( EraTxBody era,
       Typeable (Core.Script era),
       Typeable (Core.AuxiliaryData era),
-      Compactible (Core.Value era),
-      Show (Core.Value era),
-      DecodeNonNegative (Core.Value era),
       FromCBOR (Annotator (Core.Script era)),
-      Core.SerialisableData (PParamsDelta era)
+      FromCBOR (PParamsUpdate era),
+      ToCBOR (PParamsUpdate era)
     ) =>
-    FromCBOR (Annotator (TxBody era))
+    FromCBOR (Annotator (AlonzoTxBody era))
 
--- The Set of constraints necessary to use the TxBody pattern
-type AlonzoBody era =
-  ( Era era,
-    Compactible (Core.Value era),
-    ToCBOR (Core.Script era),
-    Core.SerialisableData (PParamsDelta era)
-  )
-
-pattern TxBody ::
-  AlonzoBody era =>
+pattern AlonzoTxBody ::
+  (EraTxOut era, ToCBOR (PParamsUpdate era)) =>
   Set (TxIn (Crypto era)) ->
   Set (TxIn (Crypto era)) ->
-  StrictSeq (TxOut era) ->
+  StrictSeq (AlonzoTxOut era) ->
   StrictSeq (DCert (Crypto era)) ->
   Wdrl (Crypto era) ->
   Coin ->
   ValidityInterval ->
   StrictMaybe (Update era) ->
   Set (KeyHash 'Witness (Crypto era)) ->
-  Value (Crypto era) ->
+  MaryValue (Crypto era) ->
   StrictMaybe (ScriptIntegrityHash (Crypto era)) ->
   StrictMaybe (AuxiliaryDataHash (Crypto era)) ->
   StrictMaybe Network ->
-  TxBody era
-pattern TxBody
+  AlonzoTxBody era
+pattern AlonzoTxBody
   { inputs,
     collateral,
     outputs,
@@ -499,7 +618,7 @@ pattern TxBody
         _
       )
   where
-    TxBody
+    AlonzoTxBody
       inputsX
       collateralX
       outputsX
@@ -513,28 +632,31 @@ pattern TxBody
       scriptIntegrityHashX
       adHashX
       txnetworkidX =
-        TxBodyConstr $
-          memoBytes
-            ( encodeTxBodyRaw $
-                TxBodyRaw
-                  inputsX
-                  collateralX
-                  outputsX
-                  certsX
-                  wdrlsX
-                  txfeeX
-                  vldtX
-                  updateX
-                  reqSignerHashesX
-                  mintX
-                  scriptIntegrityHashX
-                  adHashX
-                  txnetworkidX
-            )
+        mkAlonzoTxBody $
+          TxBodyRaw
+            inputsX
+            collateralX
+            outputsX
+            certsX
+            wdrlsX
+            txfeeX
+            vldtX
+            updateX
+            reqSignerHashesX
+            mintX
+            scriptIntegrityHashX
+            adHashX
+            txnetworkidX
 
-{-# COMPLETE TxBody #-}
+{-# COMPLETE AlonzoTxBody #-}
 
-instance (c ~ Crypto era) => HashAnnotated (TxBody era) EraIndependentTxBody c
+mkAlonzoTxBody ::
+  (EraTxOut era, ToCBOR (PParamsUpdate era)) => -- , ToCBOR (PParamsUpdate era), EncodeMint (Value era)) =>
+  TxBodyRaw era ->
+  AlonzoTxBody era
+mkAlonzoTxBody = TxBodyConstr . memoBytes . encodeTxBodyRaw
+
+instance (c ~ Crypto era) => HashAnnotated (AlonzoTxBody era) EraIndependentTxBody c
 
 -- ==============================================================================
 -- We define these accessor functions manually, because if we define them using
@@ -542,21 +664,20 @@ instance (c ~ Crypto era) => HashAnnotated (TxBody era) EraIndependentTxBody c
 -- constraint as a precondition. This is unnecessary, as one can see below
 -- they need not be constrained at all. This should be fixed in the GHC compiler.
 
-inputs' :: TxBody era -> Set (TxIn (Crypto era))
-collateral' :: TxBody era -> Set (TxIn (Crypto era))
-outputs' :: TxBody era -> StrictSeq (TxOut era)
-certs' :: TxBody era -> StrictSeq (DCert (Crypto era))
-txfee' :: TxBody era -> Coin
-wdrls' :: TxBody era -> Wdrl (Crypto era)
-vldt' :: TxBody era -> ValidityInterval
-update' :: TxBody era -> StrictMaybe (Update era)
-reqSignerHashes' :: TxBody era -> Set (KeyHash 'Witness (Crypto era))
-adHash' :: TxBody era -> StrictMaybe (AuxiliaryDataHash (Crypto era))
-mint' :: TxBody era -> Value (Crypto era)
-scriptIntegrityHash' :: TxBody era -> StrictMaybe (ScriptIntegrityHash (Crypto era))
+inputs' :: AlonzoTxBody era -> Set (TxIn (Crypto era))
+collateral' :: AlonzoTxBody era -> Set (TxIn (Crypto era))
+outputs' :: AlonzoTxBody era -> StrictSeq (AlonzoTxOut era)
+certs' :: AlonzoTxBody era -> StrictSeq (DCert (Crypto era))
+txfee' :: AlonzoTxBody era -> Coin
+wdrls' :: AlonzoTxBody era -> Wdrl (Crypto era)
+vldt' :: AlonzoTxBody era -> ValidityInterval
+update' :: AlonzoTxBody era -> StrictMaybe (Update era)
+reqSignerHashes' :: AlonzoTxBody era -> Set (KeyHash 'Witness (Crypto era))
+adHash' :: AlonzoTxBody era -> StrictMaybe (AuxiliaryDataHash (Crypto era))
+mint' :: AlonzoTxBody era -> MaryValue (Crypto era)
+scriptIntegrityHash' :: AlonzoTxBody era -> StrictMaybe (ScriptIntegrityHash (Crypto era))
+txnetworkid' :: AlonzoTxBody era -> StrictMaybe Network
 inputs' (TxBodyConstr (Memo raw _)) = _inputs raw
-
-txnetworkid' :: TxBody era -> StrictMaybe Network
 
 collateral' (TxBodyConstr (Memo raw _)) = _collateral raw
 
@@ -586,12 +707,7 @@ txnetworkid' (TxBodyConstr (Memo raw _)) = _txnetworkid raw
 -- Serialisation
 --------------------------------------------------------------------------------
 
-instance
-  ( Era era,
-    Compactible (Core.Value era)
-  ) =>
-  ToCBOR (TxOut era)
-  where
+instance EraTxOut era => ToCBOR (AlonzoTxOut era) where
   toCBOR (TxOutCompact addr cv) =
     encodeListLen 2
       <> toCBOR addr
@@ -602,26 +718,12 @@ instance
       <> toCBOR cv
       <> toCBOR dh
 
-instance
-  ( Era era,
-    DecodeNonNegative (Core.Value era),
-    Show (Core.Value era),
-    Compactible (Core.Value era)
-  ) =>
-  FromCBOR (TxOut era)
-  where
+instance EraTxOut era => FromCBOR (AlonzoTxOut era) where
   fromCBOR = fromNotSharedCBOR
   {-# INLINE fromCBOR #-}
 
-instance
-  ( Era era,
-    DecodeNonNegative (Core.Value era),
-    Show (Core.Value era),
-    Compactible (Core.Value era)
-  ) =>
-  FromSharedCBOR (TxOut era)
-  where
-  type Share (TxOut era) = Interns (Credential 'Staking (Crypto era))
+instance EraTxOut era => FromSharedCBOR (AlonzoTxOut era) where
+  type Share (AlonzoTxOut era) = Interns (Credential 'Staking (Crypto era))
   fromSharedCBOR credsInterns = do
     lenOrIndef <- decodeListLenOrIndef
     let internTxOut = \case
@@ -653,27 +755,21 @@ instance
   {-# INLINE fromSharedCBOR #-}
 
 pattern TxOutCompact ::
-  ( Era era,
-    Val (Core.Value era),
-    HasCallStack
-  ) =>
+  (EraTxOut era, HasCallStack) =>
   CompactAddr (Crypto era) ->
   CompactForm (Core.Value era) ->
-  TxOut era
+  AlonzoTxOut era
 pattern TxOutCompact addr vl <-
   (viewCompactTxOut -> (addr, vl, SNothing))
   where
     TxOutCompact cAddr cVal = mkTxOutCompact (decompactAddr cAddr) cAddr cVal SNothing
 
 pattern TxOutCompactDH ::
-  forall era.
-  ( Era era,
-    HasCallStack
-  ) =>
+  (EraTxOut era, HasCallStack) =>
   CompactAddr (Crypto era) ->
   CompactForm (Core.Value era) ->
   DataHash (Crypto era) ->
-  TxOut era
+  AlonzoTxOut era
 pattern TxOutCompactDH addr vl dh <-
   (viewCompactTxOut -> (addr, vl, SJust dh))
   where
@@ -682,22 +778,19 @@ pattern TxOutCompactDH addr vl dh <-
 {-# COMPLETE TxOutCompact, TxOutCompactDH #-}
 
 mkTxOutCompact ::
-  forall era.
-  (Era era, HasCallStack) =>
+  (EraTxOut era, HasCallStack) =>
   Addr (Crypto era) ->
   CompactAddr (Crypto era) ->
   CompactForm (Core.Value era) ->
   StrictMaybe (DataHash (Crypto era)) ->
-  TxOut era
+  AlonzoTxOut era
 mkTxOutCompact addr cAddr cVal mdh
-  | isAdaOnlyCompact cVal = TxOut addr (fromCompact cVal) mdh
+  | isAdaOnlyCompact cVal = AlonzoTxOut addr (fromCompact cVal) mdh
   | SJust dh <- mdh = TxOutCompactDH' cAddr cVal dh
   | otherwise = TxOutCompact' cAddr cVal
 
 encodeTxBodyRaw ::
-  ( Era era,
-    ToCBOR (PParamsDelta era)
-  ) =>
+  (EraTxOut era, ToCBOR (PParamsUpdate era)) =>
   TxBodyRaw era ->
   Encode ('Closed 'Sparse) (TxBodyRaw era)
 encodeTxBodyRaw
@@ -737,15 +830,12 @@ encodeTxBodyRaw
 
 instance
   forall era.
-  ( Era era,
+  ( EraTxBody era,
     Typeable (Core.Script era),
     Typeable (Core.AuxiliaryData era),
-    Compactible (Core.Value era),
-    Show (Core.Value era),
-    DecodeNonNegative (Core.Value era),
     FromCBOR (Annotator (Core.Script era)),
-    FromCBOR (PParamsDelta era),
-    ToCBOR (PParamsDelta era)
+    FromCBOR (PParamsUpdate era),
+    ToCBOR (PParamsUpdate era)
   ) =>
   FromCBOR (TxBodyRaw era)
   where
@@ -757,22 +847,6 @@ instance
         bodyFields
         requiredFields
     where
-      initial :: TxBodyRaw era
-      initial =
-        TxBodyRaw
-          mempty
-          mempty
-          StrictSeq.empty
-          StrictSeq.empty
-          (Wdrl mempty)
-          mempty
-          (ValidityInterval SNothing SNothing)
-          SNothing
-          mempty
-          mempty
-          SNothing
-          SNothing
-          SNothing
       bodyFields :: (Word -> Field (TxBodyRaw era))
       bodyFields 0 =
         field
@@ -813,16 +887,30 @@ instance
           (2, "fee")
         ]
 
+initial :: TxBodyRaw era
+initial =
+  TxBodyRaw
+    mempty
+    mempty
+    StrictSeq.empty
+    StrictSeq.empty
+    (Wdrl mempty)
+    mempty
+    (ValidityInterval SNothing SNothing)
+    SNothing
+    mempty
+    mempty
+    SNothing
+    SNothing
+    SNothing
+
 instance
-  ( Era era,
+  ( EraTxBody era,
     Typeable (Core.Script era),
     Typeable (Core.AuxiliaryData era),
-    Compactible (Core.Value era),
-    Show (Core.Value era),
-    DecodeNonNegative (Core.Value era),
     FromCBOR (Annotator (Core.Script era)),
-    FromCBOR (PParamsDelta era),
-    ToCBOR (PParamsDelta era)
+    FromCBOR (PParamsUpdate era),
+    ToCBOR (PParamsUpdate era)
   ) =>
   FromCBOR (Annotator (TxBodyRaw era))
   where
@@ -830,7 +918,7 @@ instance
 
 -- ====================================================
 -- HasField instances to be consistent with earlier Eras
-
+{-
 instance (Crypto era ~ c) => HasField "inputs" (TxBody era) (Set (TxIn c)) where
   getField (TxBodyConstr (Memo m _)) = _inputs m
 
@@ -901,9 +989,13 @@ instance (Era era, c ~ Crypto era) => HasField "datahash" (TxOut era) (StrictMay
         decodeDataHash32 @c dh
     _ -> SNothing
 
+instance HasField "referenceScript" (TxOut era) (StrictMaybe (Script era)) where
+  getField _ = SNothing
+-}
+
 getAlonzoTxOutEitherAddr ::
   HashAlgorithm (CC.ADDRHASH (Crypto era)) =>
-  TxOut era ->
+  AlonzoTxOut era ->
   Either (Addr (Crypto era)) (CompactAddr (Crypto era))
 getAlonzoTxOutEitherAddr = \case
   TxOutCompact' cAddr _ -> Right cAddr
@@ -915,9 +1007,12 @@ getAlonzoTxOutEitherAddr = \case
     | Just addr <- decodeAddress28 stakeRef addr28Extra -> Left addr
     | otherwise -> error addressErrorMsg
 
+getAlonzoTxOutEitherAddr' ::
+  EraTxOut era =>
+  AlonzoTxOut era ->
+  Either (Addr (Crypto era)) (CompactAddr (Crypto era))
+getAlonzoTxOutEitherAddr' txOut = txOut ^. addrEitherTxOutL
+
 addressErrorMsg :: String
 addressErrorMsg = "Impossible: Compacted an address of non-standard size"
 {-# NOINLINE addressErrorMsg #-}
-
-instance HasField "referenceScript" (TxOut era) (StrictMaybe (Script era)) where
-  getField _ = SNothing

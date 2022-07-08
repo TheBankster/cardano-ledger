@@ -305,6 +305,22 @@ pattern TxBody' {inputs', outputs', certs', wdrls', txfee', vldt', update', adHa
 
 {-# COMPLETE TxBody' #-}
 
+lensTxBodyRaw ::
+  ( EraTxBody era,
+    EncodeMint (Value era),
+    Functor f,
+    ToCBOR (PParamsUpdate era)
+  ) =>
+  (TxBodyRaw e -> a) ->
+  (TxBodyRaw e -> t -> TxBodyRaw era) ->
+  (a -> f t) ->
+  MATxBody e ->
+  f (MATxBody era)
+lensTxBodyRaw getter setter =
+  lens
+    (\(TxBodyConstr (Memo txBodyRaw _)) -> getter txBodyRaw)
+    (\(TxBodyConstr (Memo txBodyRaw _)) val -> mkMATxBody $ setter txBodyRaw val)
+
 instance
   ( MAClass ma crypto,
     FromCBOR (PParamsUpdate (ShelleyMAEra ma crypto)),
@@ -319,28 +335,21 @@ instance
   mkBasicTxBody = mkMATxBody initial
 
   inputsTxBodyL =
-    lens
-      (\(TxBodyConstr (Memo txBodyRaw _)) -> inputs txBodyRaw)
-      (\(TxBodyConstr (Memo txBodyRaw _)) inputs_ -> mkMATxBody $ txBodyRaw {inputs = inputs_})
+    lensTxBodyRaw inputs (\txBodyRaw inputs_ -> txBodyRaw {inputs = inputs_})
 
   outputsTxBodyL =
-    lens
-      (\(TxBodyConstr (Memo txBodyRaw _)) -> outputs txBodyRaw)
-      (\(TxBodyConstr (Memo txBodyRaw _)) outputs_ -> mkMATxBody $ txBodyRaw {outputs = outputs_})
+    lensTxBodyRaw outputs (\txBodyRaw outputs_ -> txBodyRaw {outputs = outputs_})
 
   feeTxBodyL =
-    lens
-      (\(TxBodyConstr (Memo txBodyRaw _)) -> txfee txBodyRaw)
-      (\(TxBodyConstr (Memo txBodyRaw _)) fee_ -> mkMATxBody $ txBodyRaw {txfee = fee_})
+    lensTxBodyRaw txfee (\txBodyRaw fee_ -> txBodyRaw {txfee = fee_})
 
   auxDataHashTxBodyL =
-    lens
-      (\(TxBodyConstr (Memo txBodyRaw _)) -> adHash txBodyRaw)
-      (\(TxBodyConstr (Memo txBodyRaw _)) auxDataHash -> mkMATxBody $ txBodyRaw {adHash = auxDataHash})
+    lensTxBodyRaw adHash (\txBodyRaw auxDataHash -> txBodyRaw {adHash = auxDataHash})
 
   allInputsTxBodyG = inputsTxBodyL
 
-  mintedTxBodyG = to (\(TxBodyConstr (Memo txBodyRaw _)) -> getScriptHash (Proxy @ma) (mint txBodyRaw))
+  mintedTxBodyG =
+    to (\(TxBodyConstr (Memo txBodyRaw _)) -> getScriptHash (Proxy @ma) (mint txBodyRaw))
 
 instance
   ( MAClass ma crypto,
@@ -350,21 +359,15 @@ instance
   ShelleyEraTxBody (ShelleyMAEra ma crypto)
   where
   wdrlsTxBodyL =
-    lens
-      (\(TxBodyConstr (Memo txBodyRaw _)) -> wdrls txBodyRaw)
-      (\(TxBodyConstr (Memo txBodyRaw _)) wdrls_ -> mkMATxBody $ txBodyRaw {wdrls = wdrls_})
+    lensTxBodyRaw wdrls (\txBodyRaw wdrls_ -> txBodyRaw {wdrls = wdrls_})
 
   ttlTxBodyL = notSupportedInThisEraL
 
   updateTxBodyL =
-    lens
-      (\(TxBodyConstr (Memo txBodyRaw _)) -> update txBodyRaw)
-      (\(TxBodyConstr (Memo txBodyRaw _)) update_ -> mkMATxBody $ txBodyRaw {update = update_})
+    lensTxBodyRaw update (\txBodyRaw update_ -> txBodyRaw {update = update_})
 
   certsTxBodyL =
-    lens
-      (\(TxBodyConstr (Memo txBodyRaw _)) -> certs txBodyRaw)
-      (\(TxBodyConstr (Memo txBodyRaw _)) certs_ -> mkMATxBody $ txBodyRaw {certs = certs_})
+    lensTxBodyRaw certs (\txBodyRaw certs_ -> txBodyRaw {certs = certs_})
 
 class ShelleyEraTxBody era => ShelleyMAEraTxBody era where
   vldtTxBodyL :: Lens' (Core.TxBody era) ValidityInterval
@@ -381,14 +384,10 @@ instance
   ShelleyMAEraTxBody (ShelleyMAEra ma crypto)
   where
   vldtTxBodyL =
-    lens
-      (\(TxBodyConstr (Memo txBodyRaw _)) -> vldt txBodyRaw)
-      (\(TxBodyConstr (Memo txBodyRaw _)) vldt_ -> mkMATxBody $ txBodyRaw {vldt = vldt_})
+    lensTxBodyRaw vldt (\txBodyRaw vldt_ -> txBodyRaw {vldt = vldt_})
 
   mintTxBodyL =
-    lens
-      (\(TxBodyConstr (Memo txBodyRaw _)) -> mint txBodyRaw)
-      (\(TxBodyConstr (Memo txBodyRaw _)) mint_ -> mkMATxBody $ txBodyRaw {mint = mint_})
+    lensTxBodyRaw mint (\txBodyRaw mint_ -> txBodyRaw {mint = mint_})
 
 -- =======================================================
 -- Validating timelock scripts

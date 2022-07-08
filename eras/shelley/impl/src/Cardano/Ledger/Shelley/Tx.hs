@@ -46,6 +46,7 @@ module Cardano.Ledger.Shelley.Tx
         scriptWits,
         txWitsBytes
       ),
+    mkBasicShelleyTx,
     scriptShelleyWitsL,
     addrShelleyWitsL,
     bootAddrShelleyWitsL,
@@ -85,9 +86,6 @@ import Cardano.Binary
     serializeEncoding,
     withSlice,
   )
-import Cardano.Ledger.BaseTypes
-  ( maybeToStrictMaybe,
-  )
 import Cardano.Ledger.Coin (Coin (Coin))
 import Cardano.Ledger.Core hiding (Tx, TxBody, TxOut)
 import qualified Cardano.Ledger.Core as Core
@@ -113,7 +111,11 @@ import Data.Functor.Identity (Identity)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (catMaybes)
-import Data.Maybe.Strict (StrictMaybe, strictMaybeToMaybe)
+import Data.Maybe.Strict
+  ( StrictMaybe (..),
+    maybeToStrictMaybe,
+    strictMaybeToMaybe,
+  )
 import Data.MemoBytes (Mem, MemoBytes (Memo), memoBytes)
 import Data.Set (Set)
 import qualified Data.Set as Set
@@ -208,22 +210,47 @@ auxDataShelleyTxL ::
 auxDataShelleyTxL =
   lens
     (\(TxConstr (Memo tx _)) -> _auxiliaryData tx)
-    ( \(TxConstr (Memo tx _)) auxData ->
-        TxConstr $ memoBytes $ encodeTxRaw $ tx {_auxiliaryData = auxData}
-    )
+    (\(TxConstr (Memo tx _)) auxData -> mkShelleyTx $ tx {_auxiliaryData = auxData})
 
 -- | Size getter for `ShelleyTx`.
 sizeShelleyTxG :: SimpleGetter (Tx era) Integer
 sizeShelleyTxG = to (\(TxConstr (Memo _ bytes)) -> fromIntegral $ SBS.length bytes)
 
+mkShelleyTx ::
+  ( ToCBOR (AuxiliaryData era),
+    ToCBOR (Core.TxBody era),
+    ToCBOR (Witnesses era)
+  ) =>
+  TxRaw era ->
+  ShelleyTx era
+mkShelleyTx = TxConstr . memoBytes . encodeTxRaw
+
+mkBasicShelleyTx ::
+  ( ToCBOR (AuxiliaryData era),
+    ToCBOR (Core.TxBody era),
+    ToCBOR (Witnesses era),
+    EraWitnesses era
+  ) =>
+  Core.TxBody era ->
+  ShelleyTx era
+mkBasicShelleyTx txBody =
+  mkShelleyTx $
+    TxRaw
+      { _body = txBody,
+        _wits = mkBasicWitnesses,
+        _auxiliaryData = SNothing
+      }
+
 instance CC.Crypto crypto => EraTx (ShelleyEra crypto) where
   type Tx (ShelleyEra crypto) = ShelleyTx (ShelleyEra crypto)
 
-  bodyTxG = bodyShelleyTxL
+  mkBasicTx = mkBasicShelleyTx
 
-  witsTxG = witsShelleyTxL
+  bodyTxL = bodyShelleyTxL
 
-  auxDataTxG = auxDataShelleyTxL
+  witsTxL = witsShelleyTxL
+
+  auxDataTxL = auxDataShelleyTxL
 
   sizeTxG = sizeShelleyTxG
 
@@ -273,7 +300,7 @@ pattern ShelleyTx {body, wits, auxiliaryData} <-
         _
       )
   where
-    ShelleyTx b w a = TxConstr $ memoBytes (encodeTxRaw $ TxRaw b w a)
+    ShelleyTx b w a = mkShelleyTx $ TxRaw b w a
 
 {-# COMPLETE ShelleyTx #-}
 
@@ -406,11 +433,13 @@ bootAddrShelleyWitsL = lens bootWits' (\w s -> w {bootWits = s})
 instance CC.Crypto crypto => EraWitnesses (ShelleyEra crypto) where
   type Witnesses (ShelleyEra crypto) = ShelleyWitnesses (ShelleyEra crypto)
 
-  scriptWitsG = scriptShelleyWitsL
+  mkBasicWitnesses = mempty
 
-  addrWitsG = addrShelleyWitsL
+  scriptWitsL = scriptShelleyWitsL
 
-  bootAddrWitsG = bootAddrShelleyWitsL
+  addrWitsL = addrShelleyWitsL
+
+  bootAddrWitsL = bootAddrShelleyWitsL
 
 instance Era era => ToCBOR (WitnessSetHKD Identity era) where
   toCBOR = encodePreEncoded . BSL.toStrict . txWitsBytes
@@ -629,14 +658,14 @@ validateNativeMultiSigScript ::
 validateNativeMultiSigScript msig tx =
   evalNativeMultiSigScript msig (coerceKeyRole `Set.map` vhks)
   where
-    vhks = Set.map witVKeyHash (tx ^. witsTxG . addrWitsG)
+    vhks = Set.map witVKeyHash (tx ^. witsTxL . addrWitsL)
 
 -- | Multi-signature script witness accessor function for Transactions
 txwitsScript ::
   EraTx era =>
   Core.Tx era ->
   Map (ScriptHash (Crypto era)) (Script era)
-txwitsScript tx = tx ^. witsTxG . scriptWitsG
+txwitsScript tx = tx ^. witsTxL . scriptWitsL
 
 extractKeyHashWitnessSet ::
   forall (r :: KeyRole) crypto.
@@ -667,5 +696,5 @@ witsFromTxWitnesses ::
   Core.Tx era ->
   Set (KeyHash 'Witness (Crypto era))
 witsFromTxWitnesses tx =
-  Set.map witVKeyHash (tx ^. witsTxG . addrWitsG)
-    `Set.union` Set.map bootstrapWitKeyHash (tx ^. witsTxG . bootAddrWitsG)
+  Set.map witVKeyHash (tx ^. witsTxL . addrWitsL)
+    `Set.union` Set.map bootstrapWitKeyHash (tx ^. witsTxL . bootAddrWitsL)

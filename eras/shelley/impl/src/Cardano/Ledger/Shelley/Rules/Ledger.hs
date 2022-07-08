@@ -217,7 +217,7 @@ ledgerTransition = do
       TRC
         ( DelegsEnv slot txIx pp tx account,
           dpstate,
-          StrictSeq.fromStrict $ tx ^. bodyTxG . certsTxBodyG
+          StrictSeq.fromStrict $ tx ^. bodyTxL . certsTxBodyL
         )
 
   let DPState dstate pstate = dpstate

@@ -262,12 +262,16 @@ pattern MATxBody inputs outputs certs wdrls txfee vldt update adHash mint <-
       )
   where
     MATxBody inputs outputs certs wdrls txfee vldt update adHash mint =
-      TxBodyConstr $
-        memoBytes $
-          txSparse
-            TxBodyRaw {inputs, outputs, certs, wdrls, txfee, vldt, update, adHash, mint}
+      mkMATxBody $
+        TxBodyRaw {inputs, outputs, certs, wdrls, txfee, vldt, update, adHash, mint}
 
 {-# COMPLETE MATxBody #-}
+
+mkMATxBody ::
+  (EraTxBody era, ToCBOR (PParamsUpdate era), EncodeMint (Value era)) =>
+  TxBodyRaw era ->
+  MATxBody era
+mkMATxBody = TxBodyConstr . memoBytes . txSparse
 
 -- | This pattern is for deconstruction only but accompanied with fields and
 -- projection functions.
@@ -305,60 +309,90 @@ instance
   ( MAClass ma crypto,
     FromCBOR (PParamsUpdate (ShelleyMAEra ma crypto)),
     DecodeMint (MAValue ma crypto),
+    EncodeMint (MAValue ma crypto),
     NFData (PParamsUpdate (ShelleyMAEra ma crypto))
   ) =>
   EraTxBody (ShelleyMAEra ma crypto)
   where
   type TxBody (ShelleyMAEra ma crypto) = MATxBody (ShelleyMAEra ma crypto)
 
-  inputsTxBodyG = to (\(TxBodyConstr (Memo m _)) -> inputs m)
+  mkBasicTxBody = mkMATxBody initial
 
-  allInputsTxBodyG = inputsTxBodyG
+  inputsTxBodyL =
+    lens
+      (\(TxBodyConstr (Memo txBodyRaw _)) -> inputs txBodyRaw)
+      (\(TxBodyConstr (Memo txBodyRaw _)) inputs_ -> mkMATxBody $ txBodyRaw {inputs = inputs_})
 
-  outputsTxBodyG = to (\(TxBodyConstr (Memo m _)) -> outputs m)
+  outputsTxBodyL =
+    lens
+      (\(TxBodyConstr (Memo txBodyRaw _)) -> outputs txBodyRaw)
+      (\(TxBodyConstr (Memo txBodyRaw _)) outputs_ -> mkMATxBody $ txBodyRaw {outputs = outputs_})
 
-  txFeeTxBodyG = to (\(TxBodyConstr (Memo m _)) -> txfee m)
+  feeTxBodyL =
+    lens
+      (\(TxBodyConstr (Memo txBodyRaw _)) -> txfee txBodyRaw)
+      (\(TxBodyConstr (Memo txBodyRaw _)) fee_ -> mkMATxBody $ txBodyRaw {txfee = fee_})
 
-  mintedTxBodyG = to (\(TxBodyConstr (Memo m _)) -> getScriptHash (Proxy @ma) (mint m))
+  auxDataHashTxBodyL =
+    lens
+      (\(TxBodyConstr (Memo txBodyRaw _)) -> adHash txBodyRaw)
+      (\(TxBodyConstr (Memo txBodyRaw _)) auxDataHash -> mkMATxBody $ txBodyRaw {adHash = auxDataHash})
 
-  adHashTxBodyG = to (\(TxBodyConstr (Memo m _)) -> adHash m)
+  allInputsTxBodyG = inputsTxBodyL
+
+  mintedTxBodyG = to (\(TxBodyConstr (Memo txBodyRaw _)) -> getScriptHash (Proxy @ma) (mint txBodyRaw))
 
 instance
   ( MAClass ma crypto,
     FromCBOR (PParamsUpdate (ShelleyMAEra ma crypto)),
-    DecodeMint (MAValue ma crypto),
     NFData (PParamsUpdate (ShelleyMAEra ma crypto))
   ) =>
   ShelleyEraTxBody (ShelleyMAEra ma crypto)
   where
-  wdrlsTxBodyG = to (\(TxBodyConstr (Memo m _)) -> wdrls m)
+  wdrlsTxBodyL =
+    lens
+      (\(TxBodyConstr (Memo txBodyRaw _)) -> wdrls txBodyRaw)
+      (\(TxBodyConstr (Memo txBodyRaw _)) wdrls_ -> mkMATxBody $ txBodyRaw {wdrls = wdrls_})
 
-  ttlTxBodyG = notSupportedInThisEra
+  ttlTxBodyL = notSupportedInThisEraL
 
-  updateTxBodyG = to (\(TxBodyConstr (Memo m _)) -> update m)
+  updateTxBodyL =
+    lens
+      (\(TxBodyConstr (Memo txBodyRaw _)) -> update txBodyRaw)
+      (\(TxBodyConstr (Memo txBodyRaw _)) update_ -> mkMATxBody $ txBodyRaw {update = update_})
 
-  certsTxBodyG = to (\(TxBodyConstr (Memo m _)) -> certs m)
+  certsTxBodyL =
+    lens
+      (\(TxBodyConstr (Memo txBodyRaw _)) -> certs txBodyRaw)
+      (\(TxBodyConstr (Memo txBodyRaw _)) certs_ -> mkMATxBody $ txBodyRaw {certs = certs_})
 
 class ShelleyEraTxBody era => ShelleyMAEraTxBody era where
-  vldtTxBodyG :: SimpleGetter (Core.TxBody era) ValidityInterval
+  vldtTxBodyL :: Lens' (Core.TxBody era) ValidityInterval
 
-  mintTxBodyG :: SimpleGetter (Core.TxBody era) (Value era)
+  mintTxBodyL :: Lens' (Core.TxBody era) (Value era)
 
 instance
   ( MAClass ma crypto,
     FromCBOR (PParamsUpdate (ShelleyMAEra ma crypto)),
+    EncodeMint (MAValue ma crypto),
     DecodeMint (MAValue ma crypto),
     NFData (PParamsUpdate (ShelleyMAEra ma crypto))
   ) =>
   ShelleyMAEraTxBody (ShelleyMAEra ma crypto)
   where
-  vldtTxBodyG = to (\(TxBodyConstr (Memo m _)) -> vldt m)
+  vldtTxBodyL =
+    lens
+      (\(TxBodyConstr (Memo txBodyRaw _)) -> vldt txBodyRaw)
+      (\(TxBodyConstr (Memo txBodyRaw _)) vldt_ -> mkMATxBody $ txBodyRaw {vldt = vldt_})
 
-  mintTxBodyG = to (\(TxBodyConstr (Memo m _)) -> mint m)
+  mintTxBodyL =
+    lens
+      (\(TxBodyConstr (Memo txBodyRaw _)) -> mint txBodyRaw)
+      (\(TxBodyConstr (Memo txBodyRaw _)) mint_ -> mkMATxBody $ txBodyRaw {mint = mint_})
 
 -- =======================================================
 -- Validating timelock scripts
--- We extract ValidityInterval from TxBody with vldtTxBodyG getter
+-- We extract ValidityInterval from TxBody with vldtTxBodyL getter
 -- We still need to correctly compute the witness set for TxBody as well.
 
 validateTimelock ::
@@ -366,7 +400,7 @@ validateTimelock ::
   Timelock (Crypto era) ->
   Core.Tx era ->
   Bool
-validateTimelock timelock tx = evalFPS (tx ^. bodyTxG)
+validateTimelock timelock tx = evalFPS (tx ^. bodyTxL)
   where
-    vhks = Set.map witVKeyHash (tx ^. witsTxG . addrWitsG)
-    evalFPS txBody = evalTimelock vhks (txBody ^. vldtTxBodyG) timelock
+    vhks = Set.map witVKeyHash (tx ^. witsTxL . addrWitsL)
+    evalFPS txBody = evalTimelock vhks (txBody ^. vldtTxBodyL) timelock

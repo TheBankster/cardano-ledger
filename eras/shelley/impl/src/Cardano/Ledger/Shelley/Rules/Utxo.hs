@@ -345,11 +345,11 @@ instance
         (\_ st' -> _deposited st' >= mempty),
       let utxoBalance us = Val.inject (_deposited us <> _fees us) <> balance (_utxo us)
           withdrawals :: ShelleyTxBody era -> Value era
-          withdrawals txb = Val.inject $ foldl' (<>) mempty $ unWdrl $ txb ^. wdrlsTxBodyG
+          withdrawals txb = Val.inject $ foldl' (<>) mempty $ unWdrl $ txb ^. wdrlsTxBodyL
        in PostCondition
             "Should preserve value in the UTxO state"
             ( \(TRC (_, us, tx)) us' ->
-                utxoBalance us <> withdrawals (tx ^. bodyTxG) == utxoBalance us'
+                utxoBalance us <> withdrawals (tx ^. bodyTxL) == utxoBalance us'
             )
     ]
 
@@ -381,7 +381,7 @@ utxoInductive ::
 utxoInductive = do
   TRC (UtxoEnv slot pp stakepools genDelegs, u, tx) <- judgmentContext
   let UTxOState utxo _ _ ppup _ = u
-  let txb = tx ^. bodyTxG
+  let txb = tx ^. bodyTxL
 
   {- txttl txb ≥ slot -}
   runTest $ validateTimeToLive txb slot
@@ -393,12 +393,12 @@ utxoInductive = do
   runTest $ validateFeeTooSmallUTxO pp tx
 
   {- txins txb ⊆ dom utxo -}
-  runTest $ validateBadInputsUTxO utxo $ txb ^. inputsTxBodyG
+  runTest $ validateBadInputsUTxO utxo $ txb ^. inputsTxBodyL
 
   netId <- liftSTS $ asks networkId
 
   {- ∀(_ → (a, _)) ∈ txouts txb, netId a = NetworkId -}
-  runTest . validateWrongNetwork netId . toList $ txb ^. outputsTxBodyG
+  runTest . validateWrongNetwork netId . toList $ txb ^. outputsTxBodyL
 
   {- ∀(a → ) ∈ txwdrls txb, netId a = NetworkId -}
   runTest $ validateWrongNetworkWithdrawal netId txb
@@ -420,7 +420,7 @@ utxoInductive = do
   runTest $ validateMaxTxSizeUTxO pp tx
 
   let refunded = keyRefunds pp txb
-  let txCerts = toList $ txb ^. certsTxBodyG
+  let txCerts = toList $ txb ^. certsTxBodyL
   let totalDeposits' = totalDeposits pp (`Map.notMember` stakepools) txCerts
   tellEvent $ TotalDeposits totalDeposits'
   let depositChange = totalDeposits' <-> refunded
@@ -437,7 +437,7 @@ validateTimeToLive ::
   Test (UtxoPredicateFailure era)
 validateTimeToLive txb slot = failureUnless (ttl >= slot) $ ExpiredUTxO ttl slot
   where
-    ttl = txb ^. ttlTxBodyG
+    ttl = txb ^. ttlTxBodyL
 
 -- | Ensure that there is at least one input in the `TxBody`
 --
@@ -449,7 +449,7 @@ validateInputSetEmptyUTxO ::
 validateInputSetEmptyUTxO txb =
   failureUnless (txins /= Set.empty) InputSetEmptyUTxO
   where
-    txins = txb ^. inputsTxBodyG
+    txins = txb ^. inputsTxBodyL
 
 -- | Ensure that the fee is at least the amount specified by the `minfee`
 --
@@ -466,8 +466,8 @@ validateFeeTooSmallUTxO pp tx =
   failureUnless (minFee <= txFee) $ FeeTooSmallUTxO minFee txFee
   where
     minFee = minfee pp tx
-    txFee = txb ^. txFeeTxBodyG
-    txb = tx ^. bodyTxG
+    txFee = txb ^. feeTxBodyL
+    txb = tx ^. bodyTxL
 
 -- | Ensure all transaction inputs are present in `UTxO`
 --
@@ -513,7 +513,7 @@ validateWrongNetworkWithdrawal netId txb =
     wdrlsWrongNetwork =
       filter
         (\a -> getRwdNetwork a /= netId)
-        (Map.keys . unWdrl $ txb ^. wdrlsTxBodyG)
+        (Map.keys . unWdrl $ txb ^. wdrlsTxBodyL)
 
 -- | Ensure that value consumed and produced matches up exactly
 --
@@ -604,14 +604,14 @@ updateUTxOState UTxOState {_utxo, _deposited, _fees, _stakeDistro} txb depositCh
   let UTxO utxo = _utxo
       !utxoAdd = txouts txb -- These will be inserted into the UTxO
       {- utxoDel  = txins txb ◁ utxo -}
-      !(utxoWithout, utxoDel) = extractKeys utxo (txb ^. inputsTxBodyG)
+      !(utxoWithout, utxoDel) = extractKeys utxo (txb ^. inputsTxBodyL)
       {- newUTxO = (txins txb ⋪ utxo) ∪ outs txb -}
       newUTxO = utxoWithout `Map.union` unUTxO utxoAdd
       newIncStakeDistro = updateStakeDistribution _stakeDistro (UTxO utxoDel) utxoAdd
    in UTxOState
         { _utxo = UTxO newUTxO,
           _deposited = _deposited <> depositChange,
-          _fees = _fees <> txb ^. txFeeTxBodyG,
+          _fees = _fees <> txb ^. feeTxBodyL,
           _ppups = ppups,
           _stakeDistro = newIncStakeDistro
         }

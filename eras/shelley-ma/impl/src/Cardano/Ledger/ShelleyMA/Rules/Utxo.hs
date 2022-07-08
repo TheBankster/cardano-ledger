@@ -199,7 +199,7 @@ consumed ::
   UTxO era ->
   TxBody era ->
   Value era
-consumed pp u txBody = Shelley.consumed pp u txBody <> txBody ^. mintTxBodyG
+consumed pp u txBody = Shelley.consumed pp u txBody <> txBody ^. mintTxBodyL
 
 -- | The UTxO transition rule for the Shelley-MA (Mary and Allegra) eras.
 utxoTransition ::
@@ -223,7 +223,7 @@ utxoTransition ::
 utxoTransition = do
   TRC (Shelley.UtxoEnv slot pp stakepools genDelegs, u, tx) <- judgmentContext
   let Shelley.UTxOState utxo _ _ ppup _ = u
-  let txb = tx ^. bodyTxG
+  let txb = tx ^. bodyTxL
 
   {- ininterval slot (txvld tx) -}
   runTest $ validateOutsideValidityIntervalUTxO slot txb
@@ -236,12 +236,12 @@ utxoTransition = do
   runTest $ Shelley.validateFeeTooSmallUTxO pp tx
 
   {- txins txb ⊆ dom utxo -}
-  runTest $ Shelley.validateBadInputsUTxO utxo $ txb ^. inputsTxBodyG
+  runTest $ Shelley.validateBadInputsUTxO utxo $ txb ^. inputsTxBodyL
 
   netId <- liftSTS $ asks networkId
 
   {- ∀(_ → (a, _)) ∈ txouts txb, netId a = NetworkId -}
-  runTest $ Shelley.validateWrongNetwork netId . toList $ txb ^. outputsTxBodyG
+  runTest $ Shelley.validateWrongNetwork netId . toList $ txb ^. outputsTxBodyL
 
   {- ∀(a → ) ∈ txwdrls txb, netId a = NetworkId -}
   runTest $ Shelley.validateWrongNetworkWithdrawal netId txb
@@ -270,7 +270,7 @@ utxoTransition = do
   runTest $ Shelley.validateMaxTxSizeUTxO pp tx
 
   let refunded = Shelley.keyRefunds pp txb
-  let txCerts = toList $ txb ^. certsTxBodyG
+  let txCerts = toList $ txb ^. certsTxBodyL
   let depositChange = totalDeposits pp (`Map.notMember` stakepools) txCerts Val.<-> refunded
   pure $! Shelley.updateUTxOState u txb depositChange ppup'
 
@@ -283,8 +283,8 @@ validateOutsideValidityIntervalUTxO ::
   TxBody era ->
   Test (UtxoPredicateFailure era)
 validateOutsideValidityIntervalUTxO slot txb =
-  failureUnless (inInterval slot (txb ^. vldtTxBodyG)) $
-    OutsideValidityIntervalUTxO (txb ^. vldtTxBodyG) slot
+  failureUnless (inInterval slot (txb ^. vldtTxBodyL)) $
+    OutsideValidityIntervalUTxO (txb ^. vldtTxBodyL) slot
 
 -- | Check that the mint field does not try to mint ADA. This is equivalent to
 -- the check:
@@ -295,7 +295,7 @@ validateTriesToForgeADA ::
   TxBody era ->
   Test (UtxoPredicateFailure era)
 validateTriesToForgeADA txb =
-  failureUnless (Val.coin (txb ^. mintTxBodyG) == Val.zero) TriesToForgeADA
+  failureUnless (Val.coin (txb ^. mintTxBodyL) == Val.zero) TriesToForgeADA
 
 -- | Ensure that there are no `TxOut`s that have `Value` of size larger than @MaxValSize@
 --

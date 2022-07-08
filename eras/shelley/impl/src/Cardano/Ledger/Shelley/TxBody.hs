@@ -358,35 +358,62 @@ type TxBody era = ShelleyTxBody era
 instance CC.Crypto crypto => EraTxBody (ShelleyEra crypto) where
   type TxBody (ShelleyEra crypto) = ShelleyTxBody (ShelleyEra crypto)
 
-  inputsTxBodyG = to (\(TxBodyConstr (Memo m _)) -> _inputsX m)
+  mkBasicTxBody = mkShelleyTxBody baseTxBodyRaw
 
-  allInputsTxBodyG = inputsTxBodyG
+  allInputsTxBodyG = inputsTxBodyL
 
-  outputsTxBodyG = to (\(TxBodyConstr (Memo m _)) -> _outputsX m)
+  inputsTxBodyL =
+    lens
+      (\(TxBodyConstr (Memo m _)) -> _inputsX m)
+      (\txBody inputs -> txBody {_inputs = inputs})
 
-  txFeeTxBodyG = to (\(TxBodyConstr (Memo m _)) -> _txfeeX m)
+  outputsTxBodyL =
+    lens
+      (\(TxBodyConstr (Memo m _)) -> _outputsX m)
+      (\txBody outputs -> txBody {_outputs = outputs})
 
-  mintedTxBodyG = to (const Set.empty) -- TODO: fix this wart. Shelley does not know what minting is
+  feeTxBodyL =
+    lens
+      (\(TxBodyConstr (Memo m _)) -> _txfeeX m)
+      (\txBody fee -> txBody {_txfee = fee})
 
-  adHashTxBodyG = to (\(TxBodyConstr (Memo m _)) -> _mdHashX m)
+  -- TODO: fix this wart. Shelley does not know what minting is and this lens should move to Mary
+  mintedTxBodyG = to (const Set.empty)
+
+  auxDataHashTxBodyL =
+    lens
+      (\(TxBodyConstr (Memo m _)) -> _mdHashX m)
+      (\txBody auxDataHash -> txBody {_mdHash = auxDataHash})
 
 class EraTxBody era => ShelleyEraTxBody era where
-  wdrlsTxBodyG :: SimpleGetter (Core.TxBody era) (Wdrl (Crypto era))
+  wdrlsTxBodyL :: Lens' (Core.TxBody era) (Wdrl (Crypto era))
 
-  ttlTxBodyG :: ProtVerInEra era (ShelleyEra c) => SimpleGetter (Core.TxBody era) SlotNo
+  ttlTxBodyL :: ProtVerInEra era (ShelleyEra c) => Lens' (Core.TxBody era) SlotNo
 
-  updateTxBodyG :: SimpleGetter (Core.TxBody era) (StrictMaybe (Update era))
+  updateTxBodyL :: Lens' (Core.TxBody era) (StrictMaybe (Update era))
 
-  certsTxBodyG :: SimpleGetter (Core.TxBody era) (StrictSeq (DCert (Crypto era)))
+  certsTxBodyL :: Lens' (Core.TxBody era) (StrictSeq (DCert (Crypto era)))
 
 instance CC.Crypto crypto => ShelleyEraTxBody (ShelleyEra crypto) where
-  wdrlsTxBodyG = to (\(TxBodyConstr (Memo m _)) -> _wdrlsX m)
+  wdrlsTxBodyL =
+    lens
+      (\(TxBodyConstr (Memo m _)) -> _wdrlsX m)
+      (\txBody wdrls -> txBody {_wdrls = wdrls})
 
-  ttlTxBodyG = to (\(TxBodyConstr (Memo m _)) -> _ttlX m)
+  ttlTxBodyL =
+    lens
+      (\(TxBodyConstr (Memo m _)) -> _ttlX m)
+      (\txBody ttl -> txBody {_ttl = ttl})
 
-  updateTxBodyG = to (\(TxBodyConstr (Memo m _)) -> _txUpdateX m)
+  updateTxBodyL =
+    lens
+      (\(TxBodyConstr (Memo m _)) -> _txUpdateX m)
+      (\txBody update -> txBody {_txUpdate = update})
 
-  certsTxBodyG = to (\(TxBodyConstr (Memo m _)) -> _certsX m)
+  certsTxBodyL =
+    lens
+      (\(TxBodyConstr (Memo m _)) -> _certsX m)
+      (\txBody certs -> txBody {_certs = certs})
 
 deriving newtype instance
   (Era era, NoThunks (PParamsUpdate era)) => NoThunks (TxBody era)
@@ -434,9 +461,15 @@ pattern ShelleyTxBody {_inputs, _outputs, _certs, _wdrls, _txfee, _ttl, _txUpdat
       )
   where
     ShelleyTxBody _inputs _outputs _certs _wdrls _txfee _ttl _txUpdate _mdHash =
-      TxBodyConstr $ memoBytes (txSparse (TxBodyRaw _inputs _outputs _certs _wdrls _txfee _ttl _txUpdate _mdHash))
+      mkShelleyTxBody (TxBodyRaw _inputs _outputs _certs _wdrls _txfee _ttl _txUpdate _mdHash)
 
 {-# COMPLETE ShelleyTxBody #-}
+
+mkShelleyTxBody ::
+  (EraTxOut era, ToCBOR (PParamsUpdate era)) =>
+  TxBodyRaw era ->
+  ShelleyTxBody era
+mkShelleyTxBody = TxBodyConstr . memoBytes . txSparse
 
 -- =========================================
 

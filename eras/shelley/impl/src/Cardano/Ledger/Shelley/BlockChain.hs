@@ -125,13 +125,13 @@ coreWitnessBytes ::
   (EraTx era, SafeToHash (Witnesses era)) =>
   Tx era ->
   ByteString
-coreWitnessBytes coretx = originalBytes $ coretx ^. witsTxG
+coreWitnessBytes coretx = originalBytes $ coretx ^. witsTxL
 
 coreBodyBytes :: EraTx era => Tx era -> ByteString
-coreBodyBytes coretx = originalBytes $ coretx ^. bodyTxG
+coreBodyBytes coretx = originalBytes $ coretx ^. bodyTxL
 
 coreAuxDataBytes :: EraTx era => Tx era -> StrictMaybe ByteString
-coreAuxDataBytes coretx = originalBytes <$> coretx ^. auxDataTxG
+coreAuxDataBytes coretx = originalBytes <$> coretx ^. auxDataTxL
 
 -- ===========================
 

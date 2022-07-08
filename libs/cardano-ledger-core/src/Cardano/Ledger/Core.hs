@@ -49,6 +49,7 @@ module Cardano.Ledger.Core
     ProtVerInBounds,
     ProtVerInEra,
     notSupportedInThisEra,
+    notSupportedInThisEraL,
 
     -- * Re-exports
     module Cardano.Ledger.Hashes,
@@ -103,6 +104,7 @@ class (CC.Crypto (Crypto era), Typeable era, ProtVerLow era <= ProtVerHigh era) 
 
   -- | Highest major protocol version for this era. By default se to `ProtVerLow`
   type ProtVerHigh era :: Nat
+
   type ProtVerHigh era = ProtVerLow era
 
 -- | A transaction.
@@ -119,11 +121,11 @@ class
 
   mkBasicTx :: TxBody era -> Tx era
 
-  bodyTxG :: Lens' (Tx era) (TxBody era)
+  bodyTxL :: Lens' (Tx era) (TxBody era)
 
-  witsTxG :: Lens' (Tx era) (Witnesses era)
+  witsTxL :: Lens' (Tx era) (Witnesses era)
 
-  auxDataTxG :: Lens' (Tx era) (StrictMaybe (AuxiliaryData era))
+  auxDataTxL :: Lens' (Tx era) (StrictMaybe (AuxiliaryData era))
 
   sizeTxG :: SimpleGetter (Tx era) Integer
 
@@ -142,17 +144,17 @@ class
 
   mkBasicTxBody :: TxBody era
 
-  inputsTxBodyG :: Lens' (TxBody era) (Set (TxIn (Crypto era)))
+  inputsTxBodyL :: Lens' (TxBody era) (Set (TxIn (Crypto era)))
 
-  outputsTxBodyG :: Lens' (TxBody era) (StrictSeq (TxOut era))
+  outputsTxBodyL :: Lens' (TxBody era) (StrictSeq (TxOut era))
 
-  txFeeTxBodyG :: Lens' (TxBody era) Coin
+  feeTxBodyL :: Lens' (TxBody era) Coin
 
-  mintedTxBodyG :: Lens' (TxBody era) (Set (ScriptHash (Crypto era)))
+  auxDataHashTxBodyL :: Lens' (TxBody era) (StrictMaybe (AuxiliaryDataHash (Crypto era)))
 
-  allInputsTxBodyG :: Lens' (TxBody era) (Set (TxIn (Crypto era)))
+  allInputsTxBodyG :: SimpleGetter (TxBody era) (Set (TxIn (Crypto era)))
 
-  adHashTxBodyG :: Lens' (TxBody era) (StrictMaybe (AuxiliaryDataHash (Crypto era)))
+  mintedTxBodyG :: SimpleGetter (TxBody era) (Set (ScriptHash (Crypto era)))
 
 -- | Abstract interface into specific fields of a `TxOut`
 class
@@ -272,14 +274,17 @@ type PParamsDelta era = PParamsUpdate era
 
 {-# DEPRECATED PParamsDelta "Use `PParamsUpdate` instead" #-}
 
--- | The set of witnesses in a Tx
+-- | A collection of witnesses in a Tx
 class Era era => EraWitnesses era where
   type Witnesses era = (r :: Type) | r -> era
-  addrWitsG :: Lens' (Witnesses era) (Set (WitVKey 'Witness (Crypto era)))
 
-  bootAddrWitsG :: Lens' (Witnesses era) (Set (BootstrapWitness (Crypto era)))
+  mkBasicWitnesses :: Witnesses era
 
-  scriptWitsG :: Lens' (Witnesses era) (Map (ScriptHash (Crypto era)) (Script era))
+  addrWitsL :: Lens' (Witnesses era) (Set (WitVKey 'Witness (Crypto era)))
+
+  bootAddrWitsL :: Lens' (Witnesses era) (Set (BootstrapWitness (Crypto era)))
+
+  scriptWitsL :: Lens' (Witnesses era) (Map (ScriptHash (Crypto era)) (Script era))
 
 -- | Era STS map
 type family EraRule (k :: Symbol) era :: Type
@@ -436,11 +441,9 @@ translateEraMaybe ::
 translateEraMaybe ctxt =
   either (const Nothing) Just . runExcept . translateEra ctxt
 
-
 -----------------------------
 -- Protocol version bounds --
 -----------------------------
-
 
 type family ProtVerIsInBounds (check :: Symbol) era (v :: Nat) (b :: Bool) :: Constraint where
   ProtVerIsInBounds check era v 'True = ()
@@ -467,6 +470,9 @@ type ProtVerInBounds era l h = (ProtVerAtLeast era l, ProtVerAtMost era h)
 
 type ProtVerInEra era inEra = ProtVerInBounds era (ProtVerLow inEra) (ProtVerHigh inEra)
 
-
 notSupportedInThisEra :: HasCallStack => a
 notSupportedInThisEra = error "Impossible: Function is not supported in this era"
+
+-- Without using `lens` we hit a ghc bug, which results in a redundant constraint warning
+notSupportedInThisEraL :: HasCallStack => Lens' a b
+notSupportedInThisEraL = lens notSupportedInThisEra notSupportedInThisEra

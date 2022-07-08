@@ -208,7 +208,7 @@ delegsTransition = do
   case certificates of
     Empty -> do
       let ds = dpsDState dpstate
-          wdrls_ = unWdrl (tx ^. bodyTxG . wdrlsTxBodyG)
+          wdrls_ = unWdrl (tx ^. bodyTxL . wdrlsTxBodyL)
           rewards' = rewards ds
       isSubmapOf wdrls_ rewards' -- wdrls_ ⊆ rewards
         ?! WithdrawalsNotInRewardsDELEGS

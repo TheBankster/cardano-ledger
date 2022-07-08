@@ -30,19 +30,23 @@ import qualified Cardano.Ledger.Shelley.Rules.Rupd as Shelley
 import qualified Cardano.Ledger.Shelley.Rules.Snap as Shelley
 import qualified Cardano.Ledger.Shelley.Rules.Tick as Shelley
 import qualified Cardano.Ledger.Shelley.Rules.Upec as Shelley
-import Cardano.Ledger.Shelley.Tx (ShelleyWitnesses, WitnessSetHKD (..))
+import Cardano.Ledger.Shelley.Tx
+  ( ShelleyWitnesses,
+    addrShelleyWitsL,
+    bootAddrShelleyWitsL,
+    scriptShelleyWitsL,
+  )
 import Cardano.Ledger.Shelley.TxBody
   ( ShelleyTxOut (ShelleyTxOut),
     addrEitherShelleyTxOutL,
     valueEitherShelleyTxOutL,
   )
 import Cardano.Ledger.ShelleyMA.Timelocks (Timelock (..))
-import Cardano.Ledger.Val (DecodeMint, DecodeNonNegative, Val)
+import Cardano.Ledger.Val (DecodeMint, EncodeMint, DecodeNonNegative, Val)
 import Control.DeepSeq (NFData (..))
 import Data.Kind (Type)
 import Data.Set as Set (Set, empty, map)
 import Data.Typeable (Typeable)
-import Lens.Micro
 
 -- | The Shelley Mary/Allegra eras
 --   The uninhabited type that indexes both the Mary and Allegra Eras.
@@ -69,6 +73,7 @@ class
     Eq (MAValue ma crypto),
     FromCBOR (MAValue ma crypto),
     ToCBOR (MAValue ma crypto),
+    EncodeMint (MAValue ma crypto),
     DecodeMint (MAValue ma crypto)
   ) =>
   MAClass (ma :: MaryOrAllegra) crypto
@@ -91,9 +96,10 @@ instance MAClass ma crypto => Era (ShelleyMAEra ma crypto) where
   type ProtVerLow (ShelleyMAEra ma crypto) = 3
   type ProtVerHigh (ShelleyMAEra ma crypto) = 4
 
--- We could be more specific about protcol version on per Mary and Allegra eras
+-- We could be more specific about protocol version on per Mary and Allegra eras
 -- with a type function, but there aren't any functions that can't work for both
--- eras
+-- eras at the same time
+--
 -- type family MAProtVer (ma :: MaryOrAllegra) :: Nat where
 --   MAProtVer 'Mary = 3
 --   MAProtVer 'Allegra = 4
@@ -122,11 +128,13 @@ instance MAClass ma crypto => EraTxOut (ShelleyMAEra ma crypto) where
 instance MAClass ma crypto => EraWitnesses (ShelleyMAEra ma crypto) where
   type Witnesses (ShelleyMAEra ma crypto) = ShelleyWitnesses (ShelleyMAEra ma crypto)
 
-  scriptWitsG = to scriptWits
+  mkBasicWitnesses = mempty
 
-  addrWitsG = to addrWits
+  scriptWitsL = scriptShelleyWitsL
 
-  bootAddrWitsG = to bootWits
+  addrWitsL = addrShelleyWitsL
+
+  bootAddrWitsL = bootAddrShelleyWitsL
 
 -- These rules are all inherited from Shelley
 

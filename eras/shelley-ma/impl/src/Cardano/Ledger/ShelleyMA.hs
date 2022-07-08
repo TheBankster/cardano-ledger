@@ -43,6 +43,7 @@ import Cardano.Ledger.Shelley.Tx
     TxOut,
     auxDataShelleyTxL,
     bodyShelleyTxL,
+    mkBasicShelleyTx,
     sizeShelleyTxG,
     witsShelleyTxL,
   )
@@ -55,11 +56,13 @@ import Cardano.Ledger.ShelleyMA.TxBody (MATxBody, TxBody, validateTimelock)
 instance MAClass ma crypto => EraTx (ShelleyMAEra ma crypto) where
   type Tx (ShelleyMAEra ma crypto) = ShelleyTx (ShelleyMAEra ma crypto)
 
-  bodyTxG = bodyShelleyTxL
+  mkBasicTx = mkBasicShelleyTx
 
-  witsTxG = witsShelleyTxL
+  bodyTxL = bodyShelleyTxL
 
-  auxDataTxG = auxDataShelleyTxL
+  witsTxL = witsShelleyTxL
+
+  auxDataTxL = auxDataShelleyTxL
 
   sizeTxG = sizeShelleyTxG
 

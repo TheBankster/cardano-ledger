@@ -152,7 +152,7 @@ txins ::
   EraTxBody era =>
   TxBody era ->
   Set (TxIn (Crypto era))
-txins = (^. inputsTxBodyG)
+txins = (^. inputsTxBodyL)
 
 -- | Compute the transaction outputs of a transaction.
 txouts ::
@@ -164,7 +164,7 @@ txouts txBody =
   UTxO $
     Map.fromList
       [ (TxIn transId idx, out)
-        | (out, idx) <- zip (toList $ txBody ^. outputsTxBodyG) [minBound ..]
+        | (out, idx) <- zip (toList $ txBody ^. outputsTxBodyL) [minBound ..]
       ]
   where
     transId = txid txBody
@@ -271,7 +271,7 @@ getKeyHashFromRegPool (DCertPool (RegPool p)) = Just $ _poolId p
 getKeyHashFromRegPool _ = Nothing
 
 txup :: (EraTx era, ShelleyEraTxBody era) => Tx era -> Maybe (Update era)
-txup tx = strictMaybeToMaybe (tx ^. bodyTxG . updateTxBodyG)
+txup tx = strictMaybeToMaybe (tx ^. bodyTxL . updateTxBodyL)
 
 -- | Extract script hash from value address with script.
 getScriptHash :: Addr crypto -> Maybe (ScriptHash crypto)
@@ -305,10 +305,10 @@ scriptsNeeded u tx =
       [sh | c <- certificates, requiresVKeyWitness c, Just sh <- [scriptStakeCred c]]
     `Set.union` (txbody ^. mintedTxBodyG) -- This might be Set.empty in some Eras.
   where
-    txbody = tx ^. bodyTxG
-    withdrawals = Map.keys (unWdrl (txbody ^. wdrlsTxBodyG))
-    scriptHashes = txinsScriptHashes (txbody ^. inputsTxBodyG) u
-    certificates = toList (txbody ^. certsTxBodyG)
+    txbody = tx ^. bodyTxL
+    withdrawals = Map.keys (unWdrl (txbody ^. wdrlsTxBodyL))
+    scriptHashes = txinsScriptHashes (txbody ^. inputsTxBodyL) u
+    certificates = toList (txbody ^. certsTxBodyL)
 
 -- | Compute the subset of inputs of the set 'txInps' for which each input is
 -- locked by a script in the UTxO 'u'.
@@ -341,8 +341,8 @@ produced ::
 produced pp isNewPool txBody =
   balance (txouts txBody)
     <+> Val.inject
-      ( txBody ^. txFeeTxBodyG
-          <+> totalDeposits pp isNewPool (toList $ txBody ^. certsTxBodyG)
+      ( txBody ^. feeTxBodyL
+          <+> totalDeposits pp isNewPool (toList $ txBody ^. certsTxBodyL)
       )
 
 -- | Compute the lovelace which are destroyed by the transaction
@@ -363,7 +363,7 @@ consumed pp (UTxO u) txBody =
     lookupAddTxOut acc txin = maybe acc (addTxOut acc) $ Map.lookup txin u
     addTxOut !b out = out ^. valueTxOutL <+> b
     refunds = keyRefunds pp txBody
-    withdrawals = fold . unWdrl $ txBody ^. wdrlsTxBodyG
+    withdrawals = fold . unWdrl $ txBody ^. wdrlsTxBodyL
 
 -- | Compute the key deregistration refunds in a transaction
 keyRefunds ::
@@ -375,4 +375,4 @@ keyRefunds ::
   Coin
 keyRefunds pp tx = length deregistrations <×> getField @"_keyDeposit" pp
   where
-    deregistrations = filter isDeRegKey (toList $ tx ^. certsTxBodyG)
+    deregistrations = filter isDeRegKey (toList $ tx ^. certsTxBodyL)

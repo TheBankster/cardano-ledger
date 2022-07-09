@@ -27,7 +27,8 @@ import Data.Foldable (foldl')
 import Data.Group (Abelian)
 
 class
-  ( Abelian t,
+  ( Compactible t,
+    Abelian t,
     Eq t
   ) =>
   Val t
@@ -73,7 +74,11 @@ class
 
   isAdaOnlyCompact :: CompactForm t -> Bool
 
+  coinCompact :: CompactForm t -> CompactForm Coin
+
   injectCompact :: CompactForm Coin -> CompactForm t
+
+  modifyCompactCoin :: (CompactForm Coin -> CompactForm Coin) -> CompactForm t -> CompactForm t
 
 -- =============================================================
 -- Synonyms with types fixed at (Val t). Makes calls easier
@@ -108,6 +113,7 @@ instance Val Coin where
   pointwise p (Coin x) (Coin y) = p x y
   isAdaOnly _ = True
   isAdaOnlyCompact _ = True
+  coinCompact = id
   injectCompact = id
 
 instance Val DeltaCoin where
@@ -119,6 +125,7 @@ instance Val DeltaCoin where
   pointwise p (DeltaCoin x) (DeltaCoin y) = p x y
   isAdaOnly _ = True
   isAdaOnlyCompact _ = True
+  coinCompact (CompactDeltaCoin cc) = CompactCoin cc
   injectCompact (CompactCoin cc) = CompactDeltaCoin cc
 
 -- =============================================================

@@ -131,6 +131,7 @@ data MaryValue crypto = MaryValue !Integer !(Map (PolicyID crypto) (Map AssetNam
   deriving (Show, Generic)
 
 type Value = MaryValue
+
 {-# DEPRECATED Value "Use `MaryValue` instead" #-}
 
 instance CC.Crypto crypto => Eq (MaryValue crypto) where
@@ -197,7 +198,17 @@ instance CC.Crypto crypto => Val (MaryValue crypto) where
     CompactValue (CompactValueAdaOnly _) -> True
     CompactValue CompactValueMultiAsset {} -> False
 
+  coinCompact = \case
+    CompactValue (CompactValueAdaOnly cc) -> cc
+    CompactValue (CompactValueMultiAsset cc _ _) -> cc
+
   injectCompact = CompactValue . CompactValueAdaOnly
+
+  modifyCompactCoin f = \case
+    CompactValue (CompactValueAdaOnly cc) ->
+      CompactValue (CompactValueAdaOnly (f cc))
+    CompactValue (CompactValueMultiAsset cc n sbs) ->
+      CompactValue (CompactValueMultiAsset (f cc) n sbs)
 
 -- space (in Word64s) taken up by the ada amount
 adaWords :: Int

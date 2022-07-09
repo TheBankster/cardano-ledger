@@ -23,6 +23,7 @@ module Cardano.Ledger.Core
   ( -- * Era-changing types
     EraTx (..),
     EraTxOut (..),
+    coinTxOutL,
     EraTxBody (..),
     EraAuxiliaryData (..),
     EraWitnesses (..),
@@ -179,12 +180,6 @@ class
 
   mkBasicTxOut :: Addr (Crypto era) -> Value era -> TxOut era
 
-  coinTxOutL :: Lens' (TxOut era) Coin
-  coinTxOutL =
-    lens
-      (\txOut -> coin (txOut ^. valueTxOutL))
-      (\txOut c -> txOut & valueTxOutL .~ modifyCoin (const c) (txOut ^. valueTxOutL))
-
   valueTxOutL :: Lens' (TxOut era) (Value era)
   valueTxOutL =
     lens
@@ -198,8 +193,7 @@ class
   compactValueTxOutL =
     lens
       ( \txOut -> case txOut ^. valueEitherTxOutL of
-          Left value ->
-            fromMaybe (error $ "Illegal value in TxOut: " <> show value) $ toCompact value
+          Left value -> toCompactPartial value
           Right cValue -> cValue
       )
       (\txOut cValue -> txOut & valueEitherTxOutL .~ Right cValue)
@@ -236,6 +230,25 @@ class
   -- the callsite which form of address we have readily available without any
   -- conversions (eg. searching millions of TxOuts for a particular address)
   addrEitherTxOutL :: Lens' (TxOut era) (Either (Addr (Crypto era)) (CompactAddr (Crypto era)))
+
+coinTxOutL :: EraTxOut era => Lens' (TxOut era) Coin
+coinTxOutL =
+  lens
+    ( \txOut ->
+        case txOut ^. valueEitherTxOutL of
+          Left val -> coin val
+          Right cVal -> fromCompact (coinCompact cVal)
+    )
+    ( \txOut c ->
+        case txOut ^. valueEitherTxOutL of
+          Left val -> txOut & valueTxOutL .~ modifyCoin (const c) val
+          Right cVal ->
+            txOut & compactValueTxOutL .~ modifyCompactCoin (const (toCompactPartial c)) cVal
+    )
+
+toCompactPartial :: (Val a, Show a) => a -> CompactForm a
+toCompactPartial v =
+  fromMaybe (error $ "Illegal value in TxOut: " <> show v) $ toCompact v
 
 -- | A value is something which quantifies a transaction output.
 type family Value era :: Type

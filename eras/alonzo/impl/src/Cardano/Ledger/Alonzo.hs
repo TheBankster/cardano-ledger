@@ -106,10 +106,6 @@ instance CC.Crypto c => EraModule.Era (AlonzoEra c) where
   type Crypto (AlonzoEra c) = c
   getTxOutEitherAddr = getAlonzoTxOutEitherAddr
 
-  getAllTxInputs txb = spending `Set.union` collateral
-    where
-      spending = getField @"inputs" txb
-      collateral = getField @"collateral" txb
 
 instance API.ShelleyEraCrypto c => API.ApplyTx (AlonzoEra c) where
   reapplyTx globals env state vtx =
@@ -214,12 +210,6 @@ instance CC.Crypto c => UsesValue (AlonzoEra c)
 
 instance (CC.Crypto c) => UsesPParams (AlonzoEra c) where
   mergePPUpdates _ = updatePParams
-
-instance CC.Crypto c => ValidateAuxiliaryData (AlonzoEra c) c where
-  hashAuxiliaryData x = AuxiliaryDataHash (hashAnnotated x)
-  validateAuxiliaryData pv (AuxiliaryData metadata scrips) =
-    all validMetadatum metadata
-      && all (validScript pv) scrips
 
 instance CC.Crypto c => EraModule.SupportsSegWit (AlonzoEra c) where
   type TxSeq (AlonzoEra c) = Alonzo.TxSeq (AlonzoEra c)

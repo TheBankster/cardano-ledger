@@ -13,6 +13,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 -- | This module contains just the type of protocol parameters.
 module Cardano.Ledger.Alonzo.PParams
@@ -29,7 +30,7 @@ module Cardano.Ledger.Alonzo.PParams
     extendPP,
 
     -- * Deprecated
-    PParams' (..),
+    PParams',
     PParams,
     PParamsUpdate,
   )
@@ -67,7 +68,6 @@ import qualified Cardano.Ledger.BaseTypes as BT (ProtVer (..))
 import Cardano.Ledger.Coin (Coin (..))
 import Cardano.Ledger.Core hiding (PParams, PParamsUpdate)
 import qualified Cardano.Ledger.Core as Core
-import Cardano.Ledger.Era
 import Cardano.Ledger.HKD (HKD)
 import Cardano.Ledger.Serialization (FromCBORGroup (..), ToCBORGroup (..))
 import Cardano.Ledger.Shelley.Orphans ()

@@ -32,8 +32,11 @@ module Cardano.Ledger.Alonzo.Data
     Datum (..),
     datumDataHash,
     -- $
-    AuxiliaryData (AuxiliaryData, AuxiliaryData', scripts, txMD),
+    AlonzoAuxiliaryData (AlonzoAuxiliaryData, AlonzoAuxiliaryData', scripts, txMD),
     AuxiliaryDataHash (..),
+
+    -- * Deprecated
+    AuxiliaryData,
   )
 where
 
@@ -48,21 +51,21 @@ import Cardano.Binary
     peekTokenType,
     withSlice,
   )
+import Cardano.Ledger.Alonzo.Era
 import Cardano.Ledger.Alonzo.Language (Language (..))
-import Cardano.Ledger.Alonzo.Scripts (Script (..))
+import Cardano.Ledger.Alonzo.Scripts (Script (..), validScript)
 import Cardano.Ledger.AuxiliaryData (AuxiliaryDataHash (..))
 import Cardano.Ledger.BaseTypes (StrictMaybe (..))
+import Cardano.Ledger.Core hiding (AuxiliaryData, Script)
 import qualified Cardano.Ledger.Core as Core
 import qualified Cardano.Ledger.Crypto as CC
-import Cardano.Ledger.Era (Crypto, Era)
-import Cardano.Ledger.Hashes (DataHash, EraIndependentAuxiliaryData, EraIndependentData)
 import Cardano.Ledger.SafeHash
   ( HashAnnotated,
     SafeToHash (..),
     hashAnnotated,
   )
 import Cardano.Ledger.Serialization (mapFromCBOR)
-import Cardano.Ledger.Shelley.Metadata (Metadatum)
+import Cardano.Ledger.Shelley.Metadata (Metadatum, validMetadatum)
 import Cardano.Prelude (HeapWords (..), heapWords0, heapWords1)
 import qualified Codec.Serialise as Cborg (Serialise (..))
 import Control.DeepSeq (NFData)
@@ -332,8 +335,19 @@ emptyAuxData = AuxiliaryDataRaw mempty mempty
 -- ================================================================================
 -- Version with serialized bytes.
 
-newtype AuxiliaryData era = AuxiliaryDataConstr (MemoBytes (AuxiliaryDataRaw era))
+newtype AlonzoAuxiliaryData era = AuxiliaryDataConstr (MemoBytes (AuxiliaryDataRaw era))
   deriving newtype (ToCBOR, SafeToHash)
+
+type AuxiliaryData era = AlonzoAuxiliaryData era
+
+{-# DEPRECATED AuxiliaryData "Use `AlonzoAuxiliaryData` instead" #-}
+
+instance CC.Crypto c => EraAuxiliaryData (AlonzoEra c) where
+  type AuxiliaryData (AlonzoEra c) = AlonzoAuxiliaryData (AlonzoEra c)
+  hashAuxiliaryData x = AuxiliaryDataHash (hashAnnotated x)
+  validateAuxiliaryData pv (AlonzoAuxiliaryData metadata scrips) =
+    all validMetadatum metadata
+      && all (validScript pv) scrips
 
 instance (Crypto era ~ c) => HashAnnotated (AuxiliaryData era) EraIndependentAuxiliaryData c
 
@@ -354,7 +368,7 @@ deriving via
     ) =>
     FromCBOR (Annotator (AuxiliaryData era))
 
-pattern AuxiliaryData ::
+pattern AlonzoAuxiliaryData ::
   ( Era era,
     ToCBOR (Core.Script era),
     Core.Script era ~ Script era
@@ -362,22 +376,22 @@ pattern AuxiliaryData ::
   Map Word64 Metadatum ->
   StrictSeq (Core.Script era) ->
   AuxiliaryData era
-pattern AuxiliaryData {txMD, scripts} <-
+pattern AlonzoAuxiliaryData {txMD, scripts} <-
   AuxiliaryDataConstr (Memo (AuxiliaryDataRaw txMD scripts) _)
   where
-    AuxiliaryData m s =
+    AlonzoAuxiliaryData m s =
       AuxiliaryDataConstr
         ( memoBytes
             (encodeRaw m s)
         )
 
-{-# COMPLETE AuxiliaryData #-}
+{-# COMPLETE AlonzoAuxiliaryData #-}
 
-pattern AuxiliaryData' ::
+pattern AlonzoAuxiliaryData' ::
   Map Word64 Metadatum ->
   StrictSeq (Core.Script era) ->
   AuxiliaryData era
-pattern AuxiliaryData' txMD_ scripts_ <-
+pattern AlonzoAuxiliaryData' txMD_ scripts_ <-
   AuxiliaryDataConstr (Memo (AuxiliaryDataRaw txMD_ scripts_) _)
 
-{-# COMPLETE AuxiliaryData' #-}
+{-# COMPLETE AlonzoAuxiliaryData' #-}

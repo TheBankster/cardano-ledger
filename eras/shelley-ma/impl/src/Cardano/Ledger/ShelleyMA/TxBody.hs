@@ -321,15 +321,7 @@ lensTxBodyRaw getter setter =
     (\(TxBodyConstr (Memo txBodyRaw _)) -> getter txBodyRaw)
     (\(TxBodyConstr (Memo txBodyRaw _)) val -> mkMATxBody $ setter txBodyRaw val)
 
-instance
-  ( MAClass ma crypto,
-    FromCBOR (PParamsUpdate (ShelleyMAEra ma crypto)),
-    DecodeMint (MAValue ma crypto),
-    EncodeMint (MAValue ma crypto),
-    NFData (PParamsUpdate (ShelleyMAEra ma crypto))
-  ) =>
-  EraTxBody (ShelleyMAEra ma crypto)
-  where
+instance MAClass ma crypto => EraTxBody (ShelleyMAEra ma crypto) where
   type TxBody (ShelleyMAEra ma crypto) = MATxBody (ShelleyMAEra ma crypto)
 
   mkBasicTxBody = mkMATxBody initial
@@ -351,13 +343,7 @@ instance
   mintedTxBodyG =
     to (\(TxBodyConstr (Memo txBodyRaw _)) -> getScriptHash (Proxy @ma) (mint txBodyRaw))
 
-instance
-  ( MAClass ma crypto,
-    FromCBOR (PParamsUpdate (ShelleyMAEra ma crypto)),
-    NFData (PParamsUpdate (ShelleyMAEra ma crypto))
-  ) =>
-  ShelleyEraTxBody (ShelleyMAEra ma crypto)
-  where
+instance MAClass ma crypto => ShelleyEraTxBody (ShelleyMAEra ma crypto) where
   wdrlsTxBodyL =
     lensTxBodyRaw wdrls (\txBodyRaw wdrls_ -> txBodyRaw {wdrls = wdrls_})
 
@@ -374,15 +360,7 @@ class ShelleyEraTxBody era => ShelleyMAEraTxBody era where
 
   mintTxBodyL :: Lens' (Core.TxBody era) (Value era)
 
-instance
-  ( MAClass ma crypto,
-    FromCBOR (PParamsUpdate (ShelleyMAEra ma crypto)),
-    EncodeMint (MAValue ma crypto),
-    DecodeMint (MAValue ma crypto),
-    NFData (PParamsUpdate (ShelleyMAEra ma crypto))
-  ) =>
-  ShelleyMAEraTxBody (ShelleyMAEra ma crypto)
-  where
+instance MAClass ma crypto => ShelleyMAEraTxBody (ShelleyMAEra ma crypto) where
   vldtTxBodyL =
     lensTxBodyRaw vldt (\txBodyRaw vldt_ -> txBodyRaw {vldt = vldt_})
 

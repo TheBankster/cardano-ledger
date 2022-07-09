@@ -746,17 +746,6 @@ validPlutusdata (PV1.List ds) = all validPlutusdata ds
 validPlutusdata (PV1.I _n) = True
 validPlutusdata (PV1.B bs) = BS.length bs <= 64
 
--- | Test that every Alonzo script represents a real Script.
---     Run deepseq to see that there are no infinite computations and that
---     every Plutus Script unflattens into a real PV1.Script
-validScript :: ProtVer -> Script era -> Bool
-validScript pv scrip = case scrip of
-  TimelockScript sc -> deepseq sc True
-  PlutusScript PlutusV1 bytes -> PV1.isScriptWellFormed (transProtocolVersion pv) bytes
-  PlutusScript PlutusV2 bytes -> PV2.isScriptWellFormed (transProtocolVersion pv) bytes
-
-transProtocolVersion :: ProtVer -> PV1.ProtocolVersion
-transProtocolVersion (ProtVer major minor) = PV1.ProtocolVersion (fromIntegral major) (fromIntegral minor)
 
 -- | Compute the Set of Languages in an era, where Alonzo.Scripts are used
 languages ::

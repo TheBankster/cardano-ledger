@@ -24,6 +24,8 @@ module Cardano.Ledger.Alonzo.Scripts
     txscriptfee,
     isPlutusScript,
     pointWiseExUnits,
+    validScript,
+    transProtocolVersion,
 
     -- * Cost Model
     CostModel,
@@ -44,8 +46,9 @@ module Cardano.Ledger.Alonzo.Scripts
 where
 
 import Cardano.Binary (DecoderError (..), FromCBOR (fromCBOR), ToCBOR (toCBOR), serialize')
+import Cardano.Ledger.Alonzo.Era
 import Cardano.Ledger.Alonzo.Language (Language (..))
-import Cardano.Ledger.BaseTypes (BoundedRational (unboundRational), NonNegativeInterval)
+import Cardano.Ledger.BaseTypes (BoundedRational (unboundRational), NonNegativeInterval, ProtVer(..))
 import Cardano.Ledger.Coin (Coin (..))
 import qualified Cardano.Ledger.Core as Core
 import qualified Cardano.Ledger.Crypto as CC (Crypto)
@@ -90,7 +93,7 @@ import GHC.Generics (Generic)
 import NoThunks.Class (InspectHeapNamed (..), NoThunks (..))
 import Numeric.Natural (Natural)
 import Plutus.V1.Ledger.Api as PV1 hiding (Map, Script)
-import Plutus.V2.Ledger.Api as PV2 (costModelParamNames, mkEvaluationContext)
+import Plutus.V2.Ledger.Api as PV2 (costModelParamNames, mkEvaluationContext, isScriptWellFormed)
 
 -- | Marker indicating the part of a transaction for which this script is acting
 -- as a validator.
@@ -117,6 +120,10 @@ data Script era
   = TimelockScript (Timelock (Crypto era))
   | PlutusScript Language ShortByteString
   deriving (Eq, Generic)
+
+-- type Script era = AlonzoScript era
+
+type instance Core.Script (AlonzoEra c) = Script (AlonzoEra c)
 
 instance (ValidateScript era, Core.Script era ~ Script era) => Show (Script era) where
   show (TimelockScript x) = "TimelockScript " ++ show x
@@ -404,3 +411,16 @@ instance
       decodeScript 1 = Ann (SumD $ PlutusScript PlutusV1) <*! Ann From
       decodeScript 2 = Ann (SumD $ PlutusScript PlutusV2) <*! Ann From
       decodeScript n = Invalid n
+
+-- | Test that every Alonzo script represents a real Script.
+--     Run deepseq to see that there are no infinite computations and that
+--     every Plutus Script unflattens into a real PV1.Script
+validScript :: ProtVer -> Script era -> Bool
+validScript pv scrip = case scrip of
+  TimelockScript sc -> deepseq sc True
+  PlutusScript PlutusV1 bytes -> PV1.isScriptWellFormed (transProtocolVersion pv) bytes
+  PlutusScript PlutusV2 bytes -> PV2.isScriptWellFormed (transProtocolVersion pv) bytes
+
+transProtocolVersion :: ProtVer -> PV1.ProtocolVersion
+transProtocolVersion (ProtVer major minor) =
+  PV1.ProtocolVersion (fromIntegral major) (fromIntegral minor)

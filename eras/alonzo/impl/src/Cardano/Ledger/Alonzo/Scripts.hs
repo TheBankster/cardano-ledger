@@ -20,7 +20,8 @@
 
 module Cardano.Ledger.Alonzo.Scripts
   ( Tag (..),
-    Script (TimelockScript, PlutusScript),
+    AlonzoScript (TimelockScript, PlutusScript),
+    Script,
     txscriptfee,
     isPlutusScript,
     pointWiseExUnits,
@@ -116,32 +117,34 @@ instance NFData Tag where
 -- =======================================================
 
 -- | Scripts in the Alonzo Era, Either a Timelock script or a Plutus script.
-data Script era
+data AlonzoScript era
   = TimelockScript (Timelock (Crypto era))
   | PlutusScript Language ShortByteString
   deriving (Eq, Generic)
 
--- type Script era = AlonzoScript era
+type Script era = AlonzoScript era
 
-type instance Core.Script (AlonzoEra c) = Script (AlonzoEra c)
+{-# DEPRECATED Script "Use `AlonzoScript` instead" #-}
 
-instance (ValidateScript era, Core.Script era ~ Script era) => Show (Script era) where
+type instance Core.Script (AlonzoEra c) = AlonzoScript (AlonzoEra c)
+
+instance (ValidateScript era, Core.Script era ~ AlonzoScript era) => Show (AlonzoScript era) where
   show (TimelockScript x) = "TimelockScript " ++ show x
   show s@(PlutusScript v _) = "PlutusScript " ++ show v ++ " " ++ show (hashScript @era s)
 
 deriving via
-  InspectHeapNamed "Script" (Script era)
+  InspectHeapNamed "AlonzoScript" (AlonzoScript era)
   instance
-    NoThunks (Script era)
+    NoThunks (AlonzoScript era)
 
-instance NFData (Script era)
+instance NFData (AlonzoScript era)
 
 -- | Both constructors know their original bytes
-instance SafeToHash (Script era) where
+instance SafeToHash (AlonzoScript era) where
   originalBytes (TimelockScript t) = originalBytes t
   originalBytes (PlutusScript _ bs) = fromShort bs
 
-isPlutusScript :: Script era -> Bool
+isPlutusScript :: AlonzoScript era -> Bool
 isPlutusScript (PlutusScript _ _) = True
 isPlutusScript (TimelockScript _) = False
 

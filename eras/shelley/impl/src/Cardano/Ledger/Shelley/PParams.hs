@@ -54,10 +54,10 @@ import Cardano.Ledger.BaseTypes
   )
 import qualified Cardano.Ledger.BaseTypes as BT
 import Cardano.Ledger.Coin (Coin (..))
-import Cardano.Ledger.Core hiding (PParams, PParamsUpdate)
+import Cardano.Ledger.Core (Era (Crypto), EraPParams (applyPPUpdates))
 import qualified Cardano.Ledger.Core as Core
 import qualified Cardano.Ledger.Crypto as CC
-import Cardano.Ledger.HKD
+import Cardano.Ledger.HKD (HKD, HKDFunctor (..))
 import Cardano.Ledger.Keys (GenDelegs, KeyHash, KeyRole (..))
 import Cardano.Ledger.Serialization
   ( FromCBORGroup (..),
@@ -67,7 +67,7 @@ import Cardano.Ledger.Serialization
     mapFromCBOR,
     mapToCBOR,
   )
-import Cardano.Ledger.Shelley.Era
+import Cardano.Ledger.Shelley.Era (ShelleyEra)
 import Cardano.Ledger.Shelley.Orphans ()
 import Cardano.Ledger.Slot (EpochNo (..), SlotNo (..))
 import Control.DeepSeq (NFData)

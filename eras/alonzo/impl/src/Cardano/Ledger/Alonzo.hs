@@ -211,13 +211,6 @@ instance CC.Crypto c => UsesValue (AlonzoEra c)
 instance (CC.Crypto c) => UsesPParams (AlonzoEra c) where
   mergePPUpdates _ = updatePParams
 
-instance CC.Crypto c => EraModule.SupportsSegWit (AlonzoEra c) where
-  type TxSeq (AlonzoEra c) = Alonzo.TxSeq (AlonzoEra c)
-  fromTxSeq = Alonzo.txSeqTxns
-  toTxSeq = Alonzo.TxSeq
-  hashTxSeq = Alonzo.hashTxSeq
-  numSegComponents = 4
-
 instance API.ShelleyEraCrypto c => API.ShelleyBasedEra (AlonzoEra c)
 
 instance CC.Crypto c => ExtendedUTxO (AlonzoEra c) where

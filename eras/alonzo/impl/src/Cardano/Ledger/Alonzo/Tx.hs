@@ -40,6 +40,12 @@ module Cardano.Ledger.Alonzo.Tx
     ScriptIntegrityHash,
     -- Figure 3
     AlonzoTx (AlonzoTx, body, wits, isValid, auxiliaryData),
+    AlonzoEraTx(..),
+    mkBasicAlonzoTx,
+    bodyAlonzoTxL,
+    witsAlonzoTxL,
+    auxDataAlonzoTxL,
+    sizeAlonzoTxG,
     txdats',
     txscripts',
     txrdmrs,
@@ -178,6 +184,15 @@ instance CC.Crypto c => EraTx (AlonzoEra c) where
 
   sizeTxG = sizeAlonzoTxG
 
+class EraTx era => AlonzoEraTx era where
+  isValidTxL :: Lens' (Core.Tx era) IsValid
+
+instance CC.Crypto c => AlonzoEraTx (AlonzoEra c) where
+  isValidTxL = isValidAlonzoTxL
+
+mkBasicAlonzoTx :: (Era era, Script era ~ AlonzoScript era) => Core.TxBody era -> AlonzoTx era
+mkBasicAlonzoTx txBody = AlonzoTx txBody mempty (IsValid True) SNothing
+
 -- | `Core.TxBody` setter and getter for `AlonzoTx`.
 bodyAlonzoTxL :: Lens' (AlonzoTx era) (Core.TxBody era)
 bodyAlonzoTxL = lens body (\tx txBody -> tx {body = txBody})
@@ -199,8 +214,9 @@ sizeAlonzoTxG ::
   SimpleGetter (AlonzoTx era) Integer
 sizeAlonzoTxG = to (fromIntegral . LBS.length . serializeEncoding . toCBORForSizeComputation)
 
-mkBasicAlonzoTx :: (Era era, Script era ~ AlonzoScript era) => Core.TxBody era -> AlonzoTx era
-mkBasicAlonzoTx txBody = AlonzoTx txBody mempty (IsValid True) SNothing
+isValidAlonzoTxL :: Lens' (AlonzoTx era) IsValid
+isValidAlonzoTxL = lens isValid (\tx valid -> tx { isValid = valid })
+
 
 deriving instance
   ( Era era,

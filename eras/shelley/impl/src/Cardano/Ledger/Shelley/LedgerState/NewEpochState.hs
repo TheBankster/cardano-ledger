@@ -23,7 +23,6 @@ import Cardano.Ledger.Coin
     addDeltaCoin,
   )
 import Cardano.Ledger.Core
-import Cardano.Ledger.Era (getTxOutBootstrapAddress)
 import Cardano.Ledger.Keys
   ( GenDelegPair (..),
     GenDelegs (..),
@@ -62,6 +61,7 @@ import qualified Data.Map.Strict as Map
 import Data.Set (Set)
 import GHC.Records (HasField (..))
 import Lens.Micro
+import Lens.Micro.Extras (view)
 
 -- | This function returns the coin balance of a given pot, either the
 -- reserves or the treasury, after the instantaneous rewards and pot
@@ -178,7 +178,7 @@ returnRedeemAddrsToReserves es = es {esAccountState = acnt', esLState = ls'}
     us = lsUTxOState ls
     UTxO utxo = _utxo us
     (redeemers, nonredeemers) =
-      Map.partition (maybe False isBootstrapRedeemer . getTxOutBootstrapAddress) utxo
+      Map.partition (maybe False isBootstrapRedeemer . view bootAddrTxOutG) utxo
     acnt = esAccountState es
     utxoR = UTxO redeemers :: UTxO era
     acnt' =

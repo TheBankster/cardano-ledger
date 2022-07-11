@@ -3,6 +3,11 @@
 
 module Cardano.Ledger.Alonzo.Era
   ( AlonzoEra,
+    AlonzoUTXO,
+    AlonzoUTXOS,
+    AlonzoUTXOW,
+    AlonzoBBODY,
+    AlonzoLEDGER,
   )
 where
 

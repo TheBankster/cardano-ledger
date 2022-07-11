@@ -20,7 +20,6 @@ module Cardano.Ledger.Shelley.Rules.Utxow
     UtxowEvent (..),
     PredicateFailure,
     transitionRulesUTXOW,
-    ShelleyStyleWitnessNeeds,
 
     -- * Individual validation steps
     validateFailedScripts,
@@ -266,12 +265,6 @@ instance
 -- =================================================
 --  State Transition System Instances
 
-type ShelleyStyleWitnessNeeds era =
-  ( HasField "_protocolVersion" (PParams era) ProtVer,
-    ValidateScript era,
-    DSignable (Crypto era) (Hash (Crypto era) EraIndependentTxBody)
-  )
-
 initialLedgerStateUTXOW ::
   forall era.
   ( Embed (EraRule "UTXO" era) (UTXOW era),
@@ -300,7 +293,9 @@ transitionRulesUTXOW ::
     Signal (utxow era) ~ Tx era,
     PredicateFailure (utxow era) ~ UtxowPredicateFailure era,
     STS (utxow era),
-    ShelleyStyleWitnessNeeds era
+    HasField "_protocolVersion" (PParams era) ProtVer,
+    ValidateScript era,
+    DSignable (Crypto era) (Hash (Crypto era) EraIndependentTxBody)
   ) =>
   TransitionRule (utxow era)
 transitionRulesUTXOW = do
@@ -362,7 +357,9 @@ instance
     Environment (EraRule "UTXO" era) ~ UtxoEnv era,
     State (EraRule "UTXO" era) ~ UTxOState era,
     Signal (EraRule "UTXO" era) ~ Tx era,
-    ShelleyStyleWitnessNeeds era
+    HasField "_protocolVersion" (PParams era) ProtVer,
+    ValidateScript era,
+    DSignable (Crypto era) (Hash (Crypto era) EraIndependentTxBody)
   ) =>
   STS (UTXOW era)
   where

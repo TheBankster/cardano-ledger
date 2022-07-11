@@ -9,7 +9,56 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Cardano.Ledger.Alonzo.TxInfo where
+module Cardano.Ledger.Alonzo.TxInfo
+  ( TxOutSource (..),
+    TranslationError (..),
+    transProtocolVersion,
+    validScript,
+    transDataHash,
+    transDataHash',
+    transKeyHash,
+    transScriptHash,
+    transSafeHash,
+    transHash,
+    txInfoId,
+    transStakeCred,
+    transStakeReference,
+    transCred,
+    transAddr,
+    transTxOutAddr,
+    slotToPOSIXTime,
+    transVITime,
+    txInfoIn',
+    txInfoIn,
+    txInfoOut,
+    transPolicyID,
+    transAssetName,
+    transValue,
+    transDCert,
+    transWdrl,
+    getWitVKeyHash,
+    transDataPair,
+    transExUnits,
+    exBudgetToExUnits,
+    transScriptPurpose,
+    VersionedTxInfo (..),
+    ExtendedUTxO (..),
+    alonzoTxInfo,
+    valContext,
+    ScriptFailure (..),
+    ScriptResult (..),
+    scriptPass,
+    scriptFail,
+    PlutusDebug (..),
+    PlutusError (..),
+    PlutusDebugInfo (..),
+    debugPlutus,
+    runPLCScript,
+    explainPlutusFailure,
+    validPlutusdata,
+    languages,
+  )
+where
 
 -- =============================================
 
@@ -24,6 +73,7 @@ import Cardano.Ledger.Alonzo.Scripts
     decodeCostModel,
     getEvaluationContext,
     transProtocolVersion,
+    validScript,
   )
 import Cardano.Ledger.Alonzo.Tx
   ( AlonzoTx,
@@ -736,7 +786,7 @@ validPlutusdata (PV1.List ds) = all validPlutusdata ds
 validPlutusdata (PV1.I _n) = True
 validPlutusdata (PV1.B bs) = BS.length bs <= 64
 
--- | Compute the Set of Languages in an era, where Alonzo.Scripts are used
+-- | Compute the Set of Languages in an era, where 'AlonzoScripts' are used
 languages ::
   forall era.
   ( ExtendedUTxO era,

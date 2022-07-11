@@ -22,8 +22,8 @@ import Cardano.Ledger.Address (isBootstrapRedeemer)
 import Cardano.Ledger.BaseTypes (BlocksMade (..), TxIx (..))
 import Cardano.Ledger.Coin (CompactForm (CompactCoin))
 import Cardano.Ledger.CompactAddress (CompactAddr (UnsafeCompactAddr))
+import Cardano.Ledger.Core
 import qualified Cardano.Ledger.Crypto as CC
-import Cardano.Ledger.Era (getTxOutBootstrapAddress)
 import Cardano.Ledger.SafeHash (unsafeMakeSafeHash)
 import Cardano.Ledger.Shelley (ShelleyEra)
 import Cardano.Ledger.Shelley.API.Types
@@ -36,6 +36,7 @@ import Data.Default.Class (def)
 import qualified Data.Map.Strict as Map
 import Data.Word
 import GHC.Stack (HasCallStack)
+import Lens.Micro.Extras (view)
 
 -- | We use the same hashing algorithm so we can unwrap and rewrap the bytes.
 -- We don't care about the type that is hashed, which will differ going from
@@ -108,7 +109,7 @@ translateToShelleyLedgerState genesisShelley epochNo cvs =
       stashedAVVMAddresses =
         let UTxO utxo = _utxo . lsUTxOState . esLState $ epochState
             redeemers =
-              Map.filter (maybe False isBootstrapRedeemer . getTxOutBootstrapAddress) utxo
+              Map.filter (maybe False isBootstrapRedeemer . view bootAddrTxOutG) utxo
          in UTxO redeemers
     }
   where

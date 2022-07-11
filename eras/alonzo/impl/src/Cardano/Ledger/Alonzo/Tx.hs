@@ -40,6 +40,7 @@ module Cardano.Ledger.Alonzo.Tx
     ScriptIntegrityHash,
     -- Figure 3
     AlonzoTx (AlonzoTx, body, wits, isValid, auxiliaryData),
+    ValidatedTx,
     AlonzoEraTx(..),
     mkBasicAlonzoTx,
     bodyAlonzoTxL,
@@ -189,7 +190,7 @@ instance CC.Crypto c => EraTx (AlonzoEra c) where
 
   sizeTxG = sizeAlonzoTxG
 
-class (EraTx era, AlonzoEraTxBody era) => AlonzoEraTx era where
+class (EraTx era, AlonzoEraTxBody era, AlonzoEraWitnesses era) => AlonzoEraTx era where
   isValidTxL :: Lens' (Core.Tx era) IsValid
 
 instance CC.Crypto c => AlonzoEraTx (AlonzoEra c) where

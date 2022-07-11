@@ -53,7 +53,6 @@ import Cardano.Ledger.BaseTypes
 import Cardano.Ledger.Coin (Coin (..))
 import Cardano.Ledger.Core
 import qualified Cardano.Ledger.Crypto as CC
-import Cardano.Ledger.Era (getTxOutAddr, getTxOutBootstrapAddress)
 import Cardano.Ledger.Keys (GenDelegs, KeyHash, KeyRole (..))
 import Cardano.Ledger.Rules.ValidationMode (Inject (..), Test, runTest)
 import Cardano.Ledger.Shelley.Era (ShelleyEra)
@@ -131,6 +130,7 @@ import Data.Word (Word8)
 import GHC.Generics (Generic)
 import GHC.Records (HasField (..))
 import Lens.Micro
+import Lens.Micro.Extras (view)
 import NoThunks.Class (NoThunks (..))
 import Numeric.Natural (Natural)
 import Validation (failureUnless)
@@ -496,7 +496,7 @@ validateWrongNetwork netId outs =
     addrsWrongNetwork =
       filter
         (\a -> getNetwork a /= netId)
-        (getTxOutAddr <$> outs)
+        (view addrTxOutL <$> outs)
 
 -- | Make sure all addresses match the supplied NetworkId
 --
@@ -571,7 +571,7 @@ validateOutputBootAddrAttrsTooBig (UTxO outputs) =
     outputsAttrsTooBig =
       filter
         ( \txOut ->
-            case getTxOutBootstrapAddress txOut of
+            case txOut ^. bootAddrTxOutG of
               Just addr -> bootstrapAddressAttrsSize addr > 64
               _ -> False
         )

@@ -282,7 +282,8 @@ class
   ( Era era,
     Eq (PParams era),
     Ord (PParamsUpdate era),
-    Show (PParams era)
+    Show (PParams era),
+    Show (PParamsUpdate era)
   ) =>
   EraPParams era
   where

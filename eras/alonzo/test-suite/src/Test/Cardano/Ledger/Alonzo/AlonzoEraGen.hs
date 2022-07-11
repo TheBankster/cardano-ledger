@@ -20,6 +20,7 @@ import Cardano.Ledger.Alonzo.Language (Language (..))
 import Cardano.Ledger.Alonzo.PParams (PParams' (..), getLanguageView)
 import qualified Cardano.Ledger.Alonzo.PParams as Alonzo (PParams, extendPP, retractPP)
 import Cardano.Ledger.Alonzo.PlutusScriptApi (scriptsNeededFromBody)
+import Cardano.Ledger.Alonzo.PlutusScriptApi as Alonzo (language)
 import Cardano.Ledger.Alonzo.Rules.Utxo (utxoEntrySize, vKeyLocked)
 import Cardano.Ledger.Alonzo.Rules.Utxow (langsUsed)
 import Cardano.Ledger.Alonzo.Scripts (isPlutusScript, pointWiseExUnits, txscriptfee)
@@ -32,9 +33,9 @@ import Cardano.Ledger.Alonzo.Scripts as Alonzo
     mkCostModel,
   )
 import Cardano.Ledger.Alonzo.Tx
-  ( IsValid (..),
+  ( AlonzoTx (..),
+    IsValid (..),
     ScriptPurpose (..),
-    AlonzoTx (..),
     hashScriptIntegrity,
     minfee,
     rdptr,
@@ -544,3 +545,14 @@ someLeaf _proxy x =
           TimelockScript $
             (RequireAnyOf . Seq.fromList) [RequireTimeStart slot, RequireTimeExpire slot]
         _ -> TimelockScript $ RequireSignature x
+
+-- | given the "txscripts" field of the Witnesses, compute the set of languages used in a transaction
+langsUsed ::
+  forall era.
+  (Script era ~ AlonzoScript era, ValidateScript era) =>
+  Map.Map (ScriptHash (Crypto era)) (AlonzoScript era) ->
+  Set Language
+langsUsed hashScriptMap =
+  Set.fromList
+    [ l | (_hash, script) <- Map.toList hashScriptMap, (not . isNativeScript @era) script, Just l <- [language @era script]
+    ]

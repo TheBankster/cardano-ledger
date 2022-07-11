@@ -7,61 +7,61 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module Cardano.Ledger.Alonzo
   ( AlonzoEra,
+    AlonzoTxOut,
+    MaryValue,
+    AlonzoTxBody,
+    AlonzoScript,
+    AlonzoAuxiliaryData,
+    AlonzoPParams,
+    AlonzoPParamsUpdate,
+
+    -- * Deprecated
     Self,
-    TxOut,
+    Cardano.Ledger.Alonzo.TxBody.TxOut,
     Value,
-    TxBody,
-    Script,
-    AuxiliaryData,
-    PParams,
+    Cardano.Ledger.Alonzo.TxBody.TxBody,
+    Cardano.Ledger.Alonzo.Scripts.Script,
+    Cardano.Ledger.Alonzo.Data.AuxiliaryData,
+    Cardano.Ledger.Alonzo.PParams.PParams,
     PParamsDelta,
   )
 where
 
-import Cardano.Ledger.Alonzo.Data (AuxiliaryData (..), Datum (..))
+import Cardano.Ledger.Alonzo.Data (AlonzoAuxiliaryData, Datum (..))
+import qualified Cardano.Ledger.Alonzo.Data (AuxiliaryData)
+import Cardano.Ledger.Alonzo.Era
 import Cardano.Ledger.Alonzo.Genesis
 import Cardano.Ledger.Alonzo.Language (Language (..))
 import Cardano.Ledger.Alonzo.PParams
-  ( PParams,
-    PParams' (..),
-    PParamsUpdate,
-    updatePParams,
+  ( AlonzoPParams,
+    AlonzoPParamsHKD (..),
+    AlonzoPParamsUpdate,
   )
+import qualified Cardano.Ledger.Alonzo.PParams (PParams)
 import Cardano.Ledger.Alonzo.PlutusScriptApi (getDatumAlonzo)
-import qualified Cardano.Ledger.Alonzo.Rules.Bbody as Alonzo (AlonzoBBODY)
-import qualified Cardano.Ledger.Alonzo.Rules.Ledger as Alonzo (AlonzoLEDGER)
-import Cardano.Ledger.Alonzo.Rules.Utxo (utxoEntrySize)
-import qualified Cardano.Ledger.Alonzo.Rules.Utxo as Alonzo (AlonzoUTXO)
-import qualified Cardano.Ledger.Alonzo.Rules.Utxos as Alonzo (UTXOS)
-import qualified Cardano.Ledger.Alonzo.Rules.Utxow as Alonzo (AlonzoUTXOW)
-import Cardano.Ledger.Alonzo.Scripts (Script (..), isPlutusScript)
+import Cardano.Ledger.Alonzo.Rules (utxoEntrySize)
+import Cardano.Ledger.Alonzo.Scripts (AlonzoScript (..), isPlutusScript)
+import qualified Cardano.Ledger.Alonzo.Scripts (Script)
 import Cardano.Ledger.Alonzo.Tx (AlonzoTx (..), alonzoInputHashes, minfee)
-import Cardano.Ledger.Alonzo.TxBody (TxBody, TxOut (TxOut), getAlonzoTxOutEitherAddr)
-import Cardano.Ledger.Alonzo.TxInfo (ExtendedUTxO (..), alonzoTxInfo, validScript)
-import qualified Cardano.Ledger.Alonzo.TxSeq as Alonzo (TxSeq (..), hashTxSeq)
+import Cardano.Ledger.Alonzo.TxBody (AlonzoEraTxOut (..), AlonzoTxBody, AlonzoTxOut)
+import qualified Cardano.Ledger.Alonzo.TxBody (TxBody, TxOut)
+import Cardano.Ledger.Alonzo.TxInfo (ExtendedUTxO (..), alonzoTxInfo)
 import Cardano.Ledger.Alonzo.TxWitness (TxWitness (..))
-import Cardano.Ledger.AuxiliaryData (AuxiliaryDataHash (..), ValidateAuxiliaryData (..))
 import Cardano.Ledger.BaseTypes (BlocksMade (..))
 import Cardano.Ledger.Coin
-import qualified Cardano.Ledger.Core as Core
+import Cardano.Ledger.Core hiding (PParamsDelta, Value)
 import qualified Cardano.Ledger.Crypto as CC
-import qualified Cardano.Ledger.Era as EraModule
-import Cardano.Ledger.Keys (GenDelegs (GenDelegs))
-import qualified Cardano.Ledger.Mary.Value as V (Value)
+import Cardano.Ledger.Keys (DSignable, GenDelegs (GenDelegs), Hash)
+import Cardano.Ledger.Mary.Value (MaryValue)
 import Cardano.Ledger.PoolDistr (PoolDistr (..))
 import Cardano.Ledger.Rules.ValidationMode (applySTSNonStatic)
-import Cardano.Ledger.SafeHash (hashAnnotated)
 import Cardano.Ledger.Serialization (mkSized)
 import Cardano.Ledger.Shelley (nativeMultiSigTag)
 import qualified Cardano.Ledger.Shelley.API as API
-import Cardano.Ledger.Shelley.Constraints
-  ( UsesPParams (..),
-    UsesTxOut (..),
-    UsesValue,
-  )
 import Cardano.Ledger.Shelley.EpochBoundary
 import Cardano.Ledger.Shelley.Genesis (genesisUTxO, sgGenDelegs, sgMaxLovelaceSupply, sgProtocolParams)
 import Cardano.Ledger.Shelley.LedgerState
@@ -73,18 +73,10 @@ import Cardano.Ledger.Shelley.LedgerState
     smartUTxOState,
     _genDelegs,
   )
-import Cardano.Ledger.Shelley.Metadata (validMetadatum)
-import qualified Cardano.Ledger.Shelley.Rules.Epoch as Shelley
-import qualified Cardano.Ledger.Shelley.Rules.Mir as Shelley
-import qualified Cardano.Ledger.Shelley.Rules.Newpp as Shelley
-import qualified Cardano.Ledger.Shelley.Rules.Rupd as Shelley
-import qualified Cardano.Ledger.Shelley.Rules.Snap as Shelley
-import qualified Cardano.Ledger.Shelley.Rules.Tick as Shelley
-import qualified Cardano.Ledger.Shelley.Rules.Upec as Shelley
 import qualified Cardano.Ledger.Shelley.Tx as Shelley
 import Cardano.Ledger.Shelley.UTxO (balance)
-import Cardano.Ledger.ShelleyMA.Rules.Utxo (consumed)
-import Cardano.Ledger.ShelleyMA.Timelocks (validateTimelock)
+import Cardano.Ledger.ShelleyMA.Rules (consumed)
+import Cardano.Ledger.ShelleyMA.TxBody (validateTimelock)
 import Cardano.Ledger.Val (Val (inject), coin, (<->))
 import Control.Arrow (left)
 import Control.Monad.Except (liftEither)
@@ -95,28 +87,26 @@ import Data.Foldable (toList)
 import qualified Data.Map.Strict as Map
 import Data.Maybe.Strict
 import qualified Data.Set as Set
-import GHC.Records (HasField (..))
+import Lens.Micro
+import Lens.Micro.Extras (view)
 
 -- =====================================================
 
--- | The Alonzo era
-data AlonzoEra c
-
-instance CC.Crypto c => EraModule.Era (AlonzoEra c) where
-  type Crypto (AlonzoEra c) = c
-  getTxOutEitherAddr = getAlonzoTxOutEitherAddr
-
-
-instance API.ShelleyEraCrypto c => API.ApplyTx (AlonzoEra c) where
+instance
+  (CC.Crypto c, DSignable c (Hash c EraIndependentTxBody)) =>
+  API.ApplyTx (AlonzoEra c)
+  where
   reapplyTx globals env state vtx =
     let res =
           flip runReader globals
             . applySTSNonStatic
-              @(Core.EraRule "LEDGER" (AlonzoEra c))
+              @(EraRule "LEDGER" (AlonzoEra c))
             $ TRC (env, state, API.extractTx vtx)
      in liftEither . left API.ApplyTxError $ res
 
-instance API.ShelleyEraCrypto c => API.ApplyBlock (AlonzoEra c)
+instance
+  (CC.Crypto c, DSignable c (Hash c EraIndependentTxBody)) =>
+  API.ApplyBlock (AlonzoEra c)
 
 instance (CC.Crypto c) => Shelley.ValidateScript (AlonzoEra c) where
   isNativeScript x = not (isPlutusScript x)
@@ -173,9 +163,6 @@ instance
       genDelegs = sgGenDelegs sg
       pp = sgProtocolParams sg
 
-instance CC.Crypto c => UsesTxOut (AlonzoEra c) where
-  makeTxOut _proxy addr val = TxOut addr val SNothing
-
 instance CC.Crypto c => API.CLI (AlonzoEra c) where
   evaluateMinFee = minfee
 
@@ -188,103 +175,34 @@ instance CC.Crypto c => API.CLI (AlonzoEra c) where
   evaluateMinLovelaceOutput pp out =
     Coin $ utxoEntrySize out * unCoin (_coinsPerUTxOWord pp)
 
-type instance Tx (AlonzoEra c) = AlonzoTx (AlonzoEra c)
-
-type instance TxOut (AlonzoEra c) = AlonzoTxOut (AlonzoEra c)
-
-type instance TxBody (AlonzoEra c) = AlonzoTxBody (AlonzoEra c)
-
-type instance Value (AlonzoEra c) = MaryValue c
-
-type instance Script (AlonzoEra c) = AlonzoScript (AlonzoEra c)
-
-type instance AuxiliaryData (AlonzoEra c) = AlonzoAuxiliaryData (AlonzoEra c)
-
-type instance PParams (AlonzoEra c) = AlonzoPParams (AlonzoEra c)
-
-type instance Witnesses (AlonzoEra c) = AlonzoTxWitness (AlonzoEra c)
-
-type instance PParamsDelta (AlonzoEra c) = AlonzoPParamsUpdate (AlonzoEra c)
-
-instance CC.Crypto c => UsesValue (AlonzoEra c)
-
-instance (CC.Crypto c) => UsesPParams (AlonzoEra c) where
-  mergePPUpdates _ = updatePParams
-
-instance API.ShelleyEraCrypto c => API.ShelleyBasedEra (AlonzoEra c)
-
 instance CC.Crypto c => ExtendedUTxO (AlonzoEra c) where
   txInfo = alonzoTxInfo
   inputDataHashes = alonzoInputHashes
-  txscripts _ = txscripts' . getField @"wits"
-  getAllowedSupplimentalDataHashes txbody _ =
+  txscripts _ = txscripts' . view witsTxL
+  getAllowedSupplimentalDataHashes txBody _ =
     Set.fromList
       [ dh
-        | out <- allOuts txbody,
-          SJust dh <- [getField @"datahash" out]
+        | txOut <- allOuts txBody,
+          SJust dh <- [txOut ^. dataHashTxOutL]
       ]
   getDatum = getDatumAlonzo
   getTxOutDatum txOut =
-    case getField @"datahash" txOut of
+    case txOut ^. dataHashTxOutL of
       SNothing -> NoDatum
       SJust dh -> DatumHash dh
-  allOuts txbody = toList $ getField @"outputs" txbody
+  allOuts txBody = toList $ txBody ^. outputsTxBodyL
   allSizedOuts = map mkSized . allOuts
-
--------------------------------------------------------------------------------
--- Era Mapping
--------------------------------------------------------------------------------
-
--- These rules are new or changed in Alonzo
-
-type instance Core.EraRule "UTXOS" (AlonzoEra c) = Alonzo.UTXOS (AlonzoEra c)
-
-type instance Core.EraRule "UTXO" (AlonzoEra c) = Alonzo.AlonzoUTXO (AlonzoEra c)
-
-type instance Core.EraRule "UTXOW" (AlonzoEra c) = Alonzo.AlonzoUTXOW (AlonzoEra c)
-
-type instance Core.EraRule "LEDGER" (AlonzoEra c) = Alonzo.AlonzoLEDGER (AlonzoEra c)
-
-type instance Core.EraRule "BBODY" (AlonzoEra c) = Alonzo.AlonzoBBODY (AlonzoEra c)
-
--- Rules inherited from Shelley
-
-type instance Core.EraRule "DELEG" (AlonzoEra c) = API.DELEG (AlonzoEra c)
-
-type instance Core.EraRule "DELEGS" (AlonzoEra c) = API.DELEGS (AlonzoEra c)
-
-type instance Core.EraRule "DELPL" (AlonzoEra c) = API.DELPL (AlonzoEra c)
-
-type instance Core.EraRule "EPOCH" (AlonzoEra c) = Shelley.EPOCH (AlonzoEra c)
-
-type instance Core.EraRule "LEDGERS" (AlonzoEra c) = API.LEDGERS (AlonzoEra c)
-
-type instance Core.EraRule "MIR" (AlonzoEra c) = Shelley.MIR (AlonzoEra c)
-
-type instance Core.EraRule "NEWEPOCH" (AlonzoEra c) = API.NEWEPOCH (AlonzoEra c)
-
-type instance Core.EraRule "NEWPP" (AlonzoEra c) = Shelley.NEWPP (AlonzoEra c)
-
-type instance Core.EraRule "POOL" (AlonzoEra c) = API.POOL (AlonzoEra c)
-
-type instance Core.EraRule "POOLREAP" (AlonzoEra c) = API.POOLREAP (AlonzoEra c)
-
-type instance Core.EraRule "PPUP" (AlonzoEra c) = API.PPUP (AlonzoEra c)
-
-type instance Core.EraRule "RUPD" (AlonzoEra c) = Shelley.RUPD (AlonzoEra c)
-
-type instance Core.EraRule "SNAP" (AlonzoEra c) = Shelley.SNAP (AlonzoEra c)
-
-type instance Core.EraRule "TICK" (AlonzoEra c) = Shelley.TICK (AlonzoEra c)
-
-type instance Core.EraRule "TICKF" (AlonzoEra c) = Shelley.TICKF (AlonzoEra c)
-
-type instance Core.EraRule "UPEC" (AlonzoEra c) = Shelley.UPEC (AlonzoEra c)
 
 -- Self-Describing type synomyms
 
 type Self c = AlonzoEra c
 
-type Value era = V.Value (EraModule.Crypto era)
+{-# DEPRECATED Self "Use `AlonzoEra` instead" #-}
 
-type PParamsDelta era = PParamsUpdate era
+type Value era = MaryValue (Crypto era)
+
+{-# DEPRECATED Value "Use `MaryValue` instead" #-}
+
+type PParamsDelta era = AlonzoPParamsUpdate era
+
+{-# DEPRECATED PParamsDelta "Use `AlonzoPParamsUpdate` instead" #-}

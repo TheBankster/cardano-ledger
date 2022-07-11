@@ -50,7 +50,6 @@ import Cardano.Ledger.Coin (Coin (..))
 import Cardano.Ledger.Core
 import Cardano.Ledger.Credential (Credential (..))
 import qualified Cardano.Ledger.Crypto as CC (Crypto, HASH)
-import Cardano.Ledger.Era
 import Cardano.Ledger.Keys
   ( DSignable,
     Hash,
@@ -322,7 +321,7 @@ txinsScriptHashes txInps (UTxO u) = foldr add Set.empty txInps
     -- to get subset, start with empty, and only insert those inputs in txInps
     -- that are locked in u
     add input ans = case Map.lookup input u of
-      Just out -> case getTxOutAddr out of
+      Just txOut -> case txOut ^. addrTxOutL of
         Addr _ (ScriptHashObj h) _ -> Set.insert h ans
         _ -> ans
       Nothing -> ans

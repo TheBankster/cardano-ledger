@@ -17,6 +17,9 @@ module Cardano.Ledger.ShelleyMA.Rules.Utxo
     UtxoPredicateFailure (..),
     consumed,
     scaledMinDeposit,
+    validateOutsideValidityIntervalUTxO,
+    validateValueNotConservedUTxO,
+    validateTriesToForgeADA,
   )
 where
 
@@ -40,7 +43,7 @@ import Cardano.Ledger.Rules.ValidationMode
   )
 import Cardano.Ledger.Shelley.LedgerState (PPUPState)
 import qualified Cardano.Ledger.Shelley.LedgerState as Shelley
-import Cardano.Ledger.Shelley.PParams (ShelleyPParamsHKD (..), ShelleyPParams, Update)
+import Cardano.Ledger.Shelley.PParams (ShelleyPParams, ShelleyPParamsHKD (..), Update)
 import Cardano.Ledger.Shelley.Rules.Ppup (PPUP, PPUPEnv (..), PpupPredicateFailure)
 import qualified Cardano.Ledger.Shelley.Rules.Utxo as Shelley
 import Cardano.Ledger.Shelley.Tx (ShelleyTx (..), ShelleyTxOut, TxIn)

@@ -27,7 +27,7 @@ import Cardano.Ledger.Alonzo.Rules.Utxos (ConcreteAlonzo)
 import Cardano.Ledger.Alonzo.Scripts (CostModels, Script (..))
 import Cardano.Ledger.Alonzo.Tx
   ( ScriptPurpose,
-    ValidatedTx (..),
+    AlonzoTx (..),
     hashScriptIntegrity,
     rdptr,
   )
@@ -234,7 +234,7 @@ missingRequiredDatums ::
   ) =>
   Map.Map (ScriptHash (Crypto era)) (Core.Script era) ->
   UTxO era ->
-  ValidatedTx era ->
+  AlonzoTx era ->
   Core.TxBody era ->
   Test (UtxowPredicateFail era)
 missingRequiredDatums scriptwits utxo tx txbody = do
@@ -266,7 +266,7 @@ hasExactSetOfRedeemers ::
     ValidateScript era,
     ExtendedUTxO era,
     Core.Script era ~ Script era,
-    Core.Tx era ~ ValidatedTx era,
+    Core.Tx era ~ AlonzoTx era,
     HasField "certs" (Core.TxBody era) (StrictSeq (DCert (Crypto era))),
     HasField "inputs" (Core.TxBody era) (Set (TxIn (Crypto era))),
     HasField "wdrls" (Core.TxBody era) (Wdrl (Crypto era))
@@ -315,7 +315,7 @@ ppViewHashesMatch ::
   ( ValidateScript era,
     ExtendedUTxO era,
     Core.Script era ~ Script era,
-    Core.Tx era ~ ValidatedTx era,
+    Core.Tx era ~ AlonzoTx era,
     HasField "scriptIntegrityHash" (Core.TxBody era) (StrictMaybe (ScriptIntegrityHash (Crypto era))),
     HasField "_costmdls" (Core.PParams era) CostModels
   ) =>
@@ -347,14 +347,14 @@ alonzoStyleWitness ::
     ExtendedUTxO era,
     -- Fix some Core types to the Alonzo Era
     ConcreteAlonzo era,
-    Core.Tx era ~ ValidatedTx era,
+    Core.Tx era ~ AlonzoTx era,
     Core.Witnesses era ~ TxWitness era,
     Signable (DSIGN (Crypto era)) (Hash (HASH (Crypto era)) EraIndependentTxBody),
     -- Allow UTXOW to call UTXO
     Embed (Core.EraRule "UTXO" era) (AlonzoUTXOW era),
     Environment (Core.EraRule "UTXO" era) ~ UtxoEnv era,
     State (Core.EraRule "UTXO" era) ~ UTxOState era,
-    Signal (Core.EraRule "UTXO" era) ~ ValidatedTx era
+    Signal (Core.EraRule "UTXO" era) ~ AlonzoTx era
   ) =>
   TransitionRule (AlonzoUTXOW era)
 alonzoStyleWitness = do
@@ -526,19 +526,19 @@ instance
     ExtendedUTxO era,
     Signable (DSIGN (Crypto era)) (Hash (HASH (Crypto era)) EraIndependentTxBody),
     -- Fix some Core types to the Alonzo Era
-    Core.Tx era ~ ValidatedTx era,
+    Core.Tx era ~ AlonzoTx era,
     Core.Witnesses era ~ TxWitness era,
     ConcreteAlonzo era,
     -- Allow UTXOW to call UTXO
     Embed (Core.EraRule "UTXO" era) (AlonzoUTXOW era),
     Environment (Core.EraRule "UTXO" era) ~ UtxoEnv era,
     State (Core.EraRule "UTXO" era) ~ UTxOState era,
-    Signal (Core.EraRule "UTXO" era) ~ ValidatedTx era
+    Signal (Core.EraRule "UTXO" era) ~ AlonzoTx era
   ) =>
   STS (AlonzoUTXOW era)
   where
   type State (AlonzoUTXOW era) = UTxOState era
-  type Signal (AlonzoUTXOW era) = ValidatedTx era
+  type Signal (AlonzoUTXOW era) = AlonzoTx era
   type Environment (AlonzoUTXOW era) = UtxoEnv era
   type BaseM (AlonzoUTXOW era) = ShelleyBase
   type PredicateFailure (AlonzoUTXOW era) = UtxowPredicateFail era

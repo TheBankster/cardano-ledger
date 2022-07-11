@@ -11,7 +11,7 @@ import Cardano.Ledger.Alonzo.Scripts (CostModels)
 import Cardano.Ledger.Alonzo.TxWitness (Redeemers, TxWitness)
 import Cardano.Ledger.Babbage (BabbageEra)
 import Cardano.Ledger.Babbage.PParams (PParamsUpdate)
-import Cardano.Ledger.Babbage.Tx (ValidatedTx)
+import Cardano.Ledger.Babbage.Tx (AlonzoTx)
 import Cardano.Ledger.Babbage.TxBody (Datum, TxOut)
 import qualified Cardano.Ledger.Core as Core
 import Cardano.Ledger.Crypto (StandardCrypto)
@@ -40,7 +40,7 @@ tests n = withResource combinedCDDL (const (pure ())) $ \cddl ->
       cddlTest @(PParamsUpdate B) n "protocol_param_update",
       cddlTest @CostModels n "costmdls",
       cddlAnnotatorTest @(Redeemers B) n "[* redeemer]",
-      cddlAnnotatorTest @(ValidatedTx B) n "transaction"
+      cddlAnnotatorTest @(AlonzoTx B) n "transaction"
     ]
       <*> pure cddl
 

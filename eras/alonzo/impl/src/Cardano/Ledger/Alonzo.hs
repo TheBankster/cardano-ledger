@@ -38,7 +38,7 @@ import qualified Cardano.Ledger.Alonzo.Rules.Utxo as Alonzo (AlonzoUTXO)
 import qualified Cardano.Ledger.Alonzo.Rules.Utxos as Alonzo (UTXOS)
 import qualified Cardano.Ledger.Alonzo.Rules.Utxow as Alonzo (AlonzoUTXOW)
 import Cardano.Ledger.Alonzo.Scripts (Script (..), isPlutusScript)
-import Cardano.Ledger.Alonzo.Tx (ValidatedTx (..), alonzoInputHashes, minfee)
+import Cardano.Ledger.Alonzo.Tx (AlonzoTx (..), alonzoInputHashes, minfee)
 import Cardano.Ledger.Alonzo.TxBody (TxBody, TxOut (TxOut), getAlonzoTxOutEitherAddr)
 import Cardano.Ledger.Alonzo.TxInfo (ExtendedUTxO (..), alonzoTxInfo, validScript)
 import qualified Cardano.Ledger.Alonzo.TxSeq as Alonzo (TxSeq (..), hashTxSeq)
@@ -181,7 +181,7 @@ instance CC.Crypto c => API.CLI (AlonzoEra c) where
 
   evaluateConsumed = consumed
 
-  addKeyWitnesses (ValidatedTx b ws aux iv) newWits = ValidatedTx b ws' aux iv
+  addKeyWitnesses (AlonzoTx b ws aux iv) newWits = AlonzoTx b ws' aux iv
     where
       ws' = ws {txwitsVKey = Set.union newWits (txwitsVKey ws)}
 

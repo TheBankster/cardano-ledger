@@ -39,7 +39,7 @@ import qualified Cardano.Ledger.Alonzo.Scripts as Tag (Tag (..))
 import Cardano.Ledger.Alonzo.Tx
   ( IsValid (..),
     ScriptPurpose (..),
-    ValidatedTx (..),
+    AlonzoTx (..),
     minfee,
   )
 import Cardano.Ledger.Alonzo.TxInfo (TranslationError, VersionedTxInfo, txInfo, valContext)
@@ -1757,8 +1757,8 @@ makeNaiveBlock txs = UnsafeUnserialisedBlock bhView txs'
     txs' = (toTxSeq @era) . StrictSeq.fromList $ txs
 
 trustMeP :: Proof era -> Bool -> Core.Tx era -> Core.Tx era
-trustMeP (Alonzo _) iv' (ValidatedTx b w _ m) = ValidatedTx b w (IsValid iv') m
-trustMeP (Babbage _) iv' (ValidatedTx b w _ m) = ValidatedTx b w (IsValid iv') m
+trustMeP (Alonzo _) iv' (AlonzoTx b w _ m) = AlonzoTx b w (IsValid iv') m
+trustMeP (Babbage _) iv' (AlonzoTx b w _ m) = AlonzoTx b w (IsValid iv') m
 trustMeP _ _ tx = tx
 
 testAlonzoBlock ::

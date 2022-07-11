@@ -40,7 +40,7 @@ import Cardano.Ledger.Alonzo.PlutusScriptApi
     evalScripts,
   )
 import Cardano.Ledger.Alonzo.Scripts (CostModels, Script)
-import Cardano.Ledger.Alonzo.Tx (IsValid (..), ValidatedTx (..))
+import Cardano.Ledger.Alonzo.Tx (IsValid (..), AlonzoTx (..))
 import qualified Cardano.Ledger.Alonzo.TxBody as Alonzo
 import Cardano.Ledger.Alonzo.TxInfo
   ( ExtendedUTxO (..),
@@ -109,7 +109,7 @@ type ConcreteAlonzo era =
     Core.PParamsDelta era ~ Alonzo.PParamsUpdate era,
     Core.TxOut era ~ Alonzo.TxOut era,
     Core.Witnesses era ~ Alonzo.TxWitness era,
-    Core.Tx era ~ ValidatedTx era
+    Core.Tx era ~ AlonzoTx era
   )
 
 data UTXOS era
@@ -131,7 +131,7 @@ instance
   type BaseM (UTXOS era) = ShelleyBase
   type Environment (UTXOS era) = UtxoEnv era
   type State (UTXOS era) = UTxOState era
-  type Signal (UTXOS era) = ValidatedTx era
+  type Signal (UTXOS era) = AlonzoTx era
   type PredicateFailure (UTXOS era) = UtxosPredicateFailure era
   type Event (UTXOS era) = UtxosEvent era
   transitionRules = [utxosTransition]
@@ -412,7 +412,7 @@ instance
 --
 -- Above and beyond 'static' checks (see 'Cardano.Ledger.Rules.ValidateMode') we
 -- additionally label 2-phase checks. This is to support a workflow where we
--- validate a 'ValidatedTx'. We would like to trust the flag we have ourselves just
+-- validate a 'AlonzoTx'. We would like to trust the flag we have ourselves just
 -- computed rather than re-calculating it. However, all other checks should be
 -- computed as normal.
 

@@ -45,10 +45,10 @@ where
 import Cardano.Ledger.Address (Addr (..))
 import Cardano.Ledger.Alonzo.Data (AuxiliaryDataHash, Data (..), DataHash, hashData)
 import Cardano.Ledger.Alonzo.Scripts (CostModels (..), ExUnits (..), Prices)
-import qualified Cardano.Ledger.Alonzo.Tx as Alonzo (IsValid (..), ScriptIntegrityHash, ValidatedTx (..))
+import qualified Cardano.Ledger.Alonzo.Tx as Alonzo (IsValid (..), ScriptIntegrityHash, AlonzoTx (..))
 import qualified Cardano.Ledger.Alonzo.TxBody as Alonzo (TxBody (..), TxOut (..))
 import Cardano.Ledger.Alonzo.TxWitness (Redeemers (..), TxDats (..), TxWitness (..))
-import qualified Cardano.Ledger.Babbage.Tx as Babbage (ValidatedTx (..))
+import qualified Cardano.Ledger.Babbage.Tx as Babbage (AlonzoTx (..))
 import qualified Cardano.Ledger.Babbage.TxBody as Babbage (Datum (..), TxBody (..), TxOut (..))
 import Cardano.Ledger.BaseTypes (Network (..), NonNegativeInterval, Nonce, ProtVer (..), StrictMaybe (..), UnitInterval)
 import Cardano.Ledger.Coin (Coin (..))
@@ -288,13 +288,13 @@ initialTx era@(Shelley _) = Shelley.Tx (initialTxBody era) (initialWitnesses era
 initialTx era@(Allegra _) = Shelley.Tx (initialTxBody era) (initialWitnesses era) SNothing
 initialTx era@(Mary _) = Shelley.Tx (initialTxBody era) (initialWitnesses era) SNothing
 initialTx era@(Alonzo _) =
-  Alonzo.ValidatedTx
+  Alonzo.AlonzoTx
     (initialTxBody era)
     (initialWitnesses era)
     (Alonzo.IsValid True)
     SNothing
 initialTx era@(Babbage _) =
-  Babbage.ValidatedTx
+  Babbage.AlonzoTx
     (initialTxBody era)
     (initialWitnesses era)
     (Alonzo.IsValid True)
@@ -325,9 +325,9 @@ initialPParams (Babbage _) = def
 -- ============================================================
 
 abstractTx :: Proof era -> Core.Tx era -> [TxField era]
-abstractTx (Babbage _) (Alonzo.ValidatedTx body wit v auxdata) =
+abstractTx (Babbage _) (Alonzo.AlonzoTx body wit v auxdata) =
   [Body body, Witnesses wit, Valid v, AuxData auxdata]
-abstractTx (Alonzo _) (Alonzo.ValidatedTx body wit v auxdata) =
+abstractTx (Alonzo _) (Alonzo.AlonzoTx body wit v auxdata) =
   [Body body, Witnesses wit, Valid v, AuxData auxdata]
 abstractTx (Shelley _) (Shelley.Tx body wit auxdata) =
   [Body body, Witnesses wit, AuxData auxdata]

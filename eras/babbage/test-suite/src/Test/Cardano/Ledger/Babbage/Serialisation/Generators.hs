@@ -82,9 +82,9 @@ instance
       <*> arbitrary
       <*> arbitrary
 
-instance Mock c => Arbitrary (ValidatedTx (BabbageEra c)) where
+instance Mock c => Arbitrary (AlonzoTx (BabbageEra c)) where
   arbitrary =
-    ValidatedTx
+    AlonzoTx
       <$> arbitrary
       <*> arbitrary
       <*> arbitrary

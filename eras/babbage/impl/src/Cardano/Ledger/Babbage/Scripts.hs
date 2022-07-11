@@ -14,7 +14,7 @@ import Cardano.Ledger.Alonzo.Data (Data)
 import Cardano.Ledger.Alonzo.PlutusScriptApi (getSpendingTxIn)
 import Cardano.Ledger.Alonzo.Tx
   ( ScriptPurpose (..),
-    ValidatedTx (..),
+    AlonzoTx (..),
     isTwoPhaseScriptAddressFromMap,
     txdats',
   )
@@ -74,7 +74,7 @@ getDatumBabbage tx (UTxO m) sp = do
 --    authorizing credentials. So ‘neededScripts’ does not look there.
 -- 3) Spending inputs are always spent. So their Pay credentials are always needed.
 --
--- Compute a Map of (ScriptHash -> Script) for all Scripts found in a ValidatedTx.
+-- Compute a Map of (ScriptHash -> Script) for all Scripts found in a AlonzoTx.
 -- Note we are interested in the actual scripts that might be run during the Utxow
 -- rule. There are two places to look:
 -- 1) The Script part of the Witnesses
@@ -133,7 +133,7 @@ babbageInputDataHashes ::
     Core.TxOut era ~ TxOut era
   ) =>
   Map.Map (ScriptHash (Crypto era)) (Core.Script era) ->
-  ValidatedTx era ->
+  AlonzoTx era ->
   UTxO era ->
   (Set (DataHash (Crypto era)), Set (TxIn (Crypto era)))
 babbageInputDataHashes hashScriptMap tx (UTxO mp) =

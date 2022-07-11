@@ -29,7 +29,7 @@ import Cardano.Ledger.Alonzo.Rules.Utxo
   )
 import Cardano.Ledger.Alonzo.Rules.Utxos (UtxosPredicateFailure (..))
 import Cardano.Ledger.Alonzo.Scripts (Prices)
-import Cardano.Ledger.Alonzo.Tx (ValidatedTx (..), minfee)
+import Cardano.Ledger.Alonzo.Tx (AlonzoTx (..), minfee)
 import Cardano.Ledger.Alonzo.TxInfo (ExtendedUTxO (allOuts, allSizedOuts))
 import Cardano.Ledger.Alonzo.TxWitness (Redeemers, TxWitness (..), nullRedeemers)
 import Cardano.Ledger.Babbage.Collateral
@@ -172,7 +172,7 @@ instance
 feesOK ::
   forall era.
   ( Era era,
-    Core.Tx era ~ ValidatedTx era,
+    Core.Tx era ~ AlonzoTx era,
     Core.TxBody era ~ TxBody era,
     Core.TxOut era ~ TxOut era,
     -- "collateral" to get inputs to pay the fees
@@ -424,7 +424,7 @@ instance
     ValidateScript era,
     ConcreteBabbage era, -- Unlike the Tests, we are only going to use this once,
     -- so we fix the Core.XX types
-    Core.Tx era ~ ValidatedTx era,
+    Core.Tx era ~ AlonzoTx era,
     Core.Witnesses era ~ TxWitness era,
     -- instructions for calling UTXOS from BabbageUTXO
     Embed (Core.EraRule "UTXOS" era) (BabbageUTXO era),
@@ -438,7 +438,7 @@ instance
   STS (BabbageUTXO era)
   where
   type State (BabbageUTXO era) = Shelley.UTxOState era
-  type Signal (BabbageUTXO era) = ValidatedTx era
+  type Signal (BabbageUTXO era) = AlonzoTx era
   type Environment (BabbageUTXO era) = Shelley.UtxoEnv era
   type BaseM (BabbageUTXO era) = ShelleyBase
   type PredicateFailure (BabbageUTXO era) = BabbageUtxoPred era

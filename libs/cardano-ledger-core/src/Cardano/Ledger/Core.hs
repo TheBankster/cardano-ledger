@@ -23,6 +23,7 @@ module Cardano.Ledger.Core
   ( -- * Era-changing types
     EraTx (..),
     EraTxOut (..),
+    bootAddrTxOutG,
     coinTxOutL,
     EraTxBody (..),
     EraAuxiliaryData (..),
@@ -59,11 +60,11 @@ where
 
 import Cardano.Binary (Annotator, FromCBOR (..), ToCBOR (..))
 import qualified Cardano.Crypto.Hash as Hash
-import Cardano.Ledger.Address (Addr (..))
+import Cardano.Ledger.Address (Addr (..), BootstrapAddress)
 import Cardano.Ledger.AuxiliaryData (AuxiliaryDataHash)
 import Cardano.Ledger.BaseTypes (ProtVer)
 import Cardano.Ledger.Coin (Coin)
-import Cardano.Ledger.CompactAddress (CompactAddr, compactAddr, decompactAddr)
+import Cardano.Ledger.CompactAddress (CompactAddr, compactAddr, decompactAddr, isBootstrapCompactAddr)
 import Cardano.Ledger.Compactible
 import qualified Cardano.Ledger.Crypto as CC
 import Cardano.Ledger.Hashes
@@ -230,6 +231,16 @@ class
   -- the callsite which form of address we have readily available without any
   -- conversions (eg. searching millions of TxOuts for a particular address)
   addrEitherTxOutL :: Lens' (TxOut era) (Either (Addr (Crypto era)) (CompactAddr (Crypto era)))
+
+bootAddrTxOutG :: EraTxOut era => SimpleGetter (TxOut era) (Maybe (BootstrapAddress (Crypto era)))
+bootAddrTxOutG = to $ \txOut ->
+  case txOut ^. addrEitherTxOutL of
+    Left (AddrBootstrap bootstrapAddr) -> Just bootstrapAddr
+    Right cAddr
+      | isBootstrapCompactAddr cAddr -> do
+          AddrBootstrap bootstrapAddr <- Just (decompactAddr cAddr)
+          Just bootstrapAddr
+    _ -> Nothing
 
 coinTxOutL :: EraTxOut era => Lens' (TxOut era) Coin
 coinTxOutL =

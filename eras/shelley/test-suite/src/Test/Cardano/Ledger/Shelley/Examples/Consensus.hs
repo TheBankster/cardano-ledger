@@ -120,11 +120,11 @@ defaultShelleyLedgerExamples ::
   Core.AuxiliaryData era ->
   TranslationContext era ->
   ShelleyLedgerExamples era
-defaultShelleyLedgerExamples mkWitnesses mkValidatedTx value txBody auxData translationContext =
+defaultShelleyLedgerExamples mkWitnesses mkAlonzoTx value txBody auxData translationContext =
   ShelleyLedgerExamples
-    { sleBlock = exampleShelleyLedgerBlock (mkValidatedTx tx),
+    { sleBlock = exampleShelleyLedgerBlock (mkAlonzoTx tx),
       sleHashHeader = exampleHashHeader (Proxy @era),
-      sleTx = mkValidatedTx tx,
+      sleTx = mkAlonzoTx tx,
       sleApplyTxError =
         ApplyTxError $
           pure $

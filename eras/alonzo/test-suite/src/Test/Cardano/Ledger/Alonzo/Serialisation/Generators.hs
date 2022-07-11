@@ -172,9 +172,9 @@ instance
 
 deriving newtype instance Arbitrary IsValid
 
-instance Mock c => Arbitrary (ValidatedTx (AlonzoEra c)) where
+instance Mock c => Arbitrary (AlonzoTx (AlonzoEra c)) where
   arbitrary =
-    ValidatedTx
+    AlonzoTx
       <$> arbitrary
       <*> arbitrary
       <*> arbitrary

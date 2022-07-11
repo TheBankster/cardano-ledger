@@ -43,6 +43,8 @@ module Cardano.Ledger.Alonzo.TxBody
         txnetworkid
       ),
     AlonzoEraTxBody (..),
+    ShelleyEraTxBody (..),
+    ShelleyMAEraTxBody (..),
     inputs',
     collateral',
     outputs',
@@ -363,10 +365,10 @@ instance CC.Crypto crypto => EraTxOut (AlonzoEra crypto) where
   valueEitherTxOutL = valueEitherAlonzoTxOutL
 
 class EraTxOut era => AlonzoEraTxOut era where
-  dataHashTxBodyL :: Lens' (Core.TxOut era) (StrictMaybe (DataHash (Crypto era)))
+  dataHashTxOutL :: Lens' (Core.TxOut era) (StrictMaybe (DataHash (Crypto era)))
 
 instance CC.Crypto crypto => AlonzoEraTxOut (AlonzoEra crypto) where
-  dataHashTxBodyL =
+  dataHashTxOutL =
     lens getAlonzoTxOutDataHash (\(AlonzoTxOut addr cv _) dh -> AlonzoTxOut addr cv dh)
 
 addrEitherAlonzoTxOutL ::
@@ -517,7 +519,7 @@ instance CC.Crypto c => ShelleyMAEraTxBody (AlonzoEra c) where
   mintTxBodyL =
     lensTxBodyRaw _mint (\txBodyRaw mint_ -> txBodyRaw {_mint = mint_})
 
-class ShelleyMAEraTxBody era => AlonzoEraTxBody era where
+class (ShelleyMAEraTxBody era, AlonzoEraTxOut era) => AlonzoEraTxBody era where
   collateralTxBodyL :: Lens' (Core.TxBody era) (Set (TxIn (Crypto era)))
 
   reqSignerHashesTxBodyL :: Lens' (Core.TxBody era) (Set (KeyHash 'Witness (Crypto era)))

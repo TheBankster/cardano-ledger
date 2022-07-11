@@ -63,7 +63,7 @@ import Test.Cardano.Ledger.Generic.TxGen
     coreTxBody,
     coreTxOut,
     genUTxO,
-    genValidatedTx,
+    genAlonzoTx,
   )
 import Test.Cardano.Ledger.Shelley.Serialisation.EraIndepGenerators ()
 import Test.QuickCheck
@@ -106,7 +106,7 @@ genTxAndLEDGERState proof sizes = do
   let genT = do
         (initial, _) <- genUTxO -- Generate a random UTxO, so mUTxO is not empty
         modifyModel (\m -> m {mUTxO = initial})
-        (_utxo, tx) <- genValidatedTx proof slotNo
+        (_utxo, tx) <- genAlonzoTx proof slotNo
         model <- gets gsModel
         pp <- gets (gePParams . gsGenEnv)
         let ledgerState = extract @(LedgerState era) model
@@ -359,7 +359,7 @@ runTest computeWith action proof = do
   action ans
 
 main2 :: IO ()
-main2 = runTest (\x -> fst <$> genValidatedTx x (SlotNo 0)) (const (pure ())) (Babbage Mock)
+main2 = runTest (\x -> fst <$> genAlonzoTx x (SlotNo 0)) (const (pure ())) (Babbage Mock)
 
 main3 :: IO ()
 main3 = runTest (\_x -> UTxO . fst <$> genUTxO) action (Alonzo Mock)

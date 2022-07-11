@@ -15,7 +15,7 @@ module Test.Cardano.Ledger.Alonzo.Trace () where
 
 import Cardano.Binary (ToCBOR)
 import Cardano.Ledger.Alonzo.Rules.Ledger (AlonzoLEDGER)
-import Cardano.Ledger.Alonzo.Tx (ValidatedTx)
+import Cardano.Ledger.Alonzo.Tx (AlonzoTx)
 import Cardano.Ledger.Alonzo.TxBody ()
 import Cardano.Ledger.BaseTypes (Globals)
 import qualified Cardano.Ledger.Core as Core
@@ -80,7 +80,7 @@ instance
     HasField "outputs" (Core.TxBody era) (StrictSeq (Core.TxOut era)),
     HasField "certs" (Core.TxBody era) (StrictSeq (DCert (Crypto era))),
     Show (State (Core.EraRule "PPUP" era)),
-    Core.Tx era ~ ValidatedTx era
+    Core.Tx era ~ AlonzoTx era
   ) =>
   TQC.HasTrace (AlonzoLEDGER era) (GenEnv era)
   where

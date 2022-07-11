@@ -15,7 +15,7 @@ import Cardano.Ledger.Alonzo.Language (Language (..))
 import Cardano.Ledger.Alonzo.Scripts (ExUnits (..), Script (..))
 import qualified Cardano.Ledger.Alonzo.Scripts as Tag (Tag (..))
 import Cardano.Ledger.Alonzo.Translation ()
-import Cardano.Ledger.Alonzo.Tx (IsValid (..), ValidatedTx (..))
+import Cardano.Ledger.Alonzo.Tx (IsValid (..), AlonzoTx (..))
 import Cardano.Ledger.Alonzo.TxWitness (RdmrPtr (..), Redeemers (..), TxDats (..), TxWitness (..))
 import Cardano.Ledger.Babbage (BabbageEra)
 import Cardano.Ledger.Babbage.PParams (PParams' (..), emptyPParams, emptyPParamsUpdate)
@@ -179,8 +179,8 @@ exampleTx =
           )
     )
 
-exampleTransactionInBlock :: ValidatedTx StandardBabbage
-exampleTransactionInBlock = ValidatedTx b w (IsValid True) a
+exampleTransactionInBlock :: AlonzoTx StandardBabbage
+exampleTransactionInBlock = AlonzoTx b w (IsValid True) a
   where
     (Tx b w a) = exampleTx
 

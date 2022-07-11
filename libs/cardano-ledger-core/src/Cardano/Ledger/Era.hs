@@ -17,8 +17,8 @@ module Cardano.Ledger.Era
   )
 where
 
-import Cardano.Ledger.Address (Addr (AddrBootstrap), BootstrapAddress)
-import Cardano.Ledger.CompactAddress (CompactAddr, decompactAddr, isBootstrapCompactAddr)
+import Cardano.Ledger.Address (Addr, BootstrapAddress)
+import Cardano.Ledger.CompactAddress (CompactAddr)
 import Cardano.Ledger.Core
 import Cardano.Ledger.TxIn (TxIn)
 import Data.Set (Set)
@@ -38,18 +38,21 @@ getTxOutEitherAddr ::
   TxOut era ->
   Either (Addr (Crypto era)) (CompactAddr (Crypto era))
 getTxOutEitherAddr txOut = txOut ^. addrEitherTxOutL
+{-# DEPRECATED getTxOutEitherAddr "In favor of `addrEitherTxOutL`" #-}
 
 getTxOutAddr ::
   EraTxOut era =>
   TxOut era ->
   Addr (Crypto era)
 getTxOutAddr txOut = txOut ^. addrTxOutL
+{-# DEPRECATED getTxOutAddr "In favor of `addrTxOutL`" #-}
 
 getTxOutCompactAddr ::
   EraTxOut era =>
   TxOut era ->
   CompactAddr (Crypto era)
 getTxOutCompactAddr txOut = txOut ^. compactAddrTxOutL
+{-# DEPRECATED getTxOutCompactAddr "In favor of `compactAddrTxOutL`" #-}
 
 -- | Get the Bootsrap address from the TxOut. Returns `Nothing` if it is a
 -- Shelley address or newer
@@ -57,11 +60,5 @@ getTxOutBootstrapAddress ::
   EraTxOut era =>
   TxOut era ->
   Maybe (BootstrapAddress (Crypto era))
-getTxOutBootstrapAddress txOut =
-  case getTxOutEitherAddr txOut of
-    Left (AddrBootstrap bootstrapAddr) -> Just bootstrapAddr
-    Right cAddr
-      | isBootstrapCompactAddr cAddr -> do
-          AddrBootstrap bootstrapAddr <- Just (decompactAddr cAddr)
-          Just bootstrapAddr
-    _ -> Nothing
+getTxOutBootstrapAddress txOut = txOut ^. bootAddrTxOutG
+{-# DEPRECATED getTxOutBootstrapAddress "In favor of `bootAddrTxOutG`" #-}

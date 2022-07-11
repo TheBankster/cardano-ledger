@@ -146,4 +146,4 @@ instance
               Alonzo.txdats = dats,
               Alonzo.txrdmrs = rdmr
             }
-     in (Alonzo.ValidatedTx realTxBody witSet isValid SNothing)
+     in (Alonzo.AlonzoTx realTxBody witSet isValid SNothing)

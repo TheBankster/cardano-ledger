@@ -25,7 +25,7 @@ import Cardano.Ledger.Alonzo.Rules.Utxow
     witsVKeyNeeded,
   )
 import Cardano.Ledger.Alonzo.Scripts (Script)
-import Cardano.Ledger.Alonzo.Tx (ValidatedTx (..))
+import Cardano.Ledger.Alonzo.Tx (AlonzoTx (..))
 import Cardano.Ledger.Alonzo.TxInfo (ExtendedUTxO (..), validScript)
 import Cardano.Ledger.Alonzo.TxWitness (TxWitness (TxWitness'))
 import Cardano.Ledger.AuxiliaryData (ValidateAuxiliaryData)
@@ -276,7 +276,7 @@ babbageUtxowTransition ::
     Embed (Core.EraRule "UTXO" era) (BabbageUTXOW era),
     Environment (Core.EraRule "UTXO" era) ~ UtxoEnv era,
     State (Core.EraRule "UTXO" era) ~ UTxOState era,
-    Signal (Core.EraRule "UTXO" era) ~ ValidatedTx era,
+    Signal (Core.EraRule "UTXO" era) ~ AlonzoTx era,
     HasField "inputs" (Core.TxBody era) (Set (TxIn (Crypto era))),
     HasField "referenceInputs" (Core.TxBody era) (Set (TxIn (Crypto era)))
   ) =>
@@ -367,20 +367,20 @@ instance
     ExtendedUTxO era,
     Signable (DSIGN (Crypto era)) (Hash (HASH (Crypto era)) EraIndependentTxBody),
     -- Fix some Core types to the Babbage Era
-    Core.Tx era ~ ValidatedTx era,
+    Core.Tx era ~ AlonzoTx era,
     ConcreteBabbage era,
     -- Allow UTXOW to call UTXO
     Embed (Core.EraRule "UTXO" era) (BabbageUTXOW era),
     Environment (Core.EraRule "UTXO" era) ~ UtxoEnv era,
     State (Core.EraRule "UTXO" era) ~ UTxOState era,
-    Signal (Core.EraRule "UTXO" era) ~ ValidatedTx era,
+    Signal (Core.EraRule "UTXO" era) ~ AlonzoTx era,
     Eq (PredicateFailure (Core.EraRule "UTXOS" era)),
     Show (PredicateFailure (Core.EraRule "UTXOS" era))
   ) =>
   STS (BabbageUTXOW era)
   where
   type State (BabbageUTXOW era) = UTxOState era
-  type Signal (BabbageUTXOW era) = ValidatedTx era
+  type Signal (BabbageUTXOW era) = AlonzoTx era
   type Environment (BabbageUTXOW era) = UtxoEnv era
   type BaseM (BabbageUTXOW era) = ShelleyBase
   type PredicateFailure (BabbageUTXOW era) = BabbageUtxowPred era

@@ -250,9 +250,9 @@ ppTx ::
     PrettyA (Core.TxBody era),
     PrettyA (Core.AuxiliaryData era)
   ) =>
-  ValidatedTx era ->
+  AlonzoTx era ->
   PDoc
-ppTx (ValidatedTx b w iv aux) =
+ppTx (AlonzoTx b w iv aux) =
   ppRecord
     "Tx"
     [ ("body", prettyA b),
@@ -267,6 +267,6 @@ instance
     PrettyA (Core.TxBody era),
     PrettyA (Core.AuxiliaryData era)
   ) =>
-  PrettyA (ValidatedTx era)
+  PrettyA (AlonzoTx era)
   where
   prettyA = ppTx

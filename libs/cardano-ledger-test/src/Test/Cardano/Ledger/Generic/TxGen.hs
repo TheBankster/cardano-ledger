@@ -15,7 +15,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module Test.Cardano.Ledger.Generic.TxGen
-  ( genValidatedTx,
+  ( genAlonzoTx,
     Box (..),
     applySTSByProof,
     assembleWits,
@@ -762,12 +762,12 @@ timeToLive (ValidityInterval _ SNothing) = SlotNo maxBound
 
 -- ============================================================================
 
-genValidatedTx :: forall era. Reflect era => Proof era -> SlotNo -> GenRS era (UTxO era, Core.Tx era)
-genValidatedTx proof slot = do
-  (utxo, tx, _fee, _old) <- genValidatedTxAndInfo proof slot
+genAlonzoTx :: forall era. Reflect era => Proof era -> SlotNo -> GenRS era (UTxO era, Core.Tx era)
+genAlonzoTx proof slot = do
+  (utxo, tx, _fee, _old) <- genAlonzoTxAndInfo proof slot
   pure (utxo, tx)
 
-genValidatedTxAndInfo ::
+genAlonzoTxAndInfo ::
   forall era.
   Reflect era =>
   Proof era ->
@@ -779,7 +779,7 @@ genValidatedTxAndInfo ::
       UtxoEntry era, -- The fee key
       Maybe (UtxoEntry era) -- from oldUtxO
     )
-genValidatedTxAndInfo proof slot = do
+genAlonzoTxAndInfo proof slot = do
   GenEnv {gePParams} <- gets gsGenEnv
   validityInterval <- lift $ genValidityInterval slot
   modify (\gs -> gs {gsValidityInterval = validityInterval})
@@ -1050,7 +1050,7 @@ instance
 testTx :: IO ()
 testTx = do
   let proof = Babbage Mock
-  ((_utxo, tx, _feepair, _), genstate) <- generate $ runGenRS proof def (genValidatedTxAndInfo proof (SlotNo 0))
+  ((_utxo, tx, _feepair, _), genstate) <- generate $ runGenRS proof def (genAlonzoTxAndInfo proof (SlotNo 0))
   let m = gsModel genstate
   putStrLn (show (pcTx proof tx))
   putStrLn (show (pcModelNewEpochState proof m))

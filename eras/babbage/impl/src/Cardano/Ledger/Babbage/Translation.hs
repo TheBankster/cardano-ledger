@@ -21,7 +21,7 @@ import qualified Cardano.Ledger.Alonzo.Tx as Alonzo
 import qualified Cardano.Ledger.Alonzo.TxBody as Alonzo (TxOut (..))
 import Cardano.Ledger.Babbage (BabbageEra)
 import Cardano.Ledger.Babbage.PParams (PParams' (..))
-import Cardano.Ledger.Babbage.Tx (ValidatedTx (..))
+import Cardano.Ledger.Babbage.Tx (AlonzoTx (..))
 import Cardano.Ledger.Babbage.TxBody (Datum (..), TxOut (..))
 import Cardano.Ledger.Coin (Coin (..))
 import qualified Cardano.Ledger.Core as Core
@@ -103,7 +103,7 @@ newtype Tx era = Tx {unTx :: Core.Tx era}
 
 instance
   ( Crypto c,
-    Core.Tx (BabbageEra c) ~ ValidatedTx (BabbageEra c)
+    Core.Tx (BabbageEra c) ~ AlonzoTx (BabbageEra c)
   ) =>
   TranslateEra (BabbageEra c) Tx
   where
@@ -118,7 +118,7 @@ instance
       SNothing -> pure SNothing
       SJust axd -> SJust <$> translateViaCBORAnn "auxiliarydata" axd
     let validating = Alonzo.isValid tx
-    pure $ Tx $ ValidatedTx bdy txwits validating aux
+    pure $ Tx $ AlonzoTx bdy txwits validating aux
 
 --------------------------------------------------------------------------------
 -- Auxiliary instances and functions

@@ -10,7 +10,7 @@
 
 module Test.Cardano.Ledger.Generic.ApplyTx where
 
-import Cardano.Ledger.Alonzo.Tx (IsValid (..), ValidatedTx (..))
+import Cardano.Ledger.Alonzo.Tx (IsValid (..), AlonzoTx (..))
 import Cardano.Ledger.BaseTypes (TxIx, mkTxIxPartial)
 import Cardano.Ledger.Coin (Coin (..), addDeltaCoin)
 import qualified Cardano.Ledger.Core as Core

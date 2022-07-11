@@ -38,7 +38,7 @@ import Cardano.Ledger.Babbage.Rules.Utxo (BabbageUTXO, babbageMinUTxOValue)
 import Cardano.Ledger.Babbage.Rules.Utxos (BabbageUTXOS)
 import Cardano.Ledger.Babbage.Rules.Utxow (BabbageUTXOW)
 import Cardano.Ledger.Babbage.Scripts (babbageInputDataHashes, babbageTxScripts, getDatumBabbage)
-import Cardano.Ledger.Babbage.Tx (ValidatedTx (..), minfee)
+import Cardano.Ledger.Babbage.Tx (AlonzoTx (..), minfee)
 import Cardano.Ledger.Babbage.TxBody (Datum (..), TxBody, TxOut (TxOut), getBabbageTxOutEitherAddr)
 import Cardano.Ledger.Babbage.TxInfo (babbageTxInfo)
 import Cardano.Ledger.BaseTypes (BlocksMade (..))
@@ -187,7 +187,7 @@ instance CC.Crypto c => API.CLI (BabbageEra c) where
 
   evaluateConsumed = consumed
 
-  addKeyWitnesses (ValidatedTx b ws aux iv) newWits = ValidatedTx b ws' aux iv
+  addKeyWitnesses (AlonzoTx b ws aux iv) newWits = AlonzoTx b ws' aux iv
     where
       ws' = ws {txwitsVKey = Set.union newWits (txwitsVKey ws)}
 

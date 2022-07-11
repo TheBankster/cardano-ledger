@@ -17,7 +17,7 @@ import Cardano.Ledger.Alonzo.PlutusScriptApi (collectTwoPhaseScriptInputs, evalS
 import Cardano.Ledger.Alonzo.Rules.Bbody (AlonzoBBODY)
 import Cardano.Ledger.Alonzo.Rules.Ledger (AlonzoLEDGER)
 import Cardano.Ledger.Alonzo.Scripts (ExUnits (..), Script (..))
-import Cardano.Ledger.Alonzo.Tx (IsValid (..), ValidatedTx (..), totExUnits)
+import Cardano.Ledger.Alonzo.Tx (IsValid (..), AlonzoTx (..), totExUnits)
 import Cardano.Ledger.Alonzo.TxInfo (ScriptResult (..))
 import Cardano.Ledger.Era (ValidateScript (..))
 import Cardano.Ledger.Shelley.LedgerState hiding (circulation)

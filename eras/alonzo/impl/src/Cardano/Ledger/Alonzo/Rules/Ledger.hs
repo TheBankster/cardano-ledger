@@ -17,7 +17,7 @@ module Cardano.Ledger.Alonzo.Rules.Ledger
 where
 
 import Cardano.Ledger.Alonzo.Rules.Utxow (AlonzoEvent, AlonzoUTXOW, UtxowPredicateFail)
-import Cardano.Ledger.Alonzo.Tx (IsValid (..), ValidatedTx (..))
+import Cardano.Ledger.Alonzo.Tx (IsValid (..), AlonzoTx (..))
 import Cardano.Ledger.BaseTypes (ShelleyBase)
 import Cardano.Ledger.Coin (Coin)
 import qualified Cardano.Ledger.Core as Core
@@ -119,12 +119,12 @@ instance
     Show (Core.PParamsDelta era),
     DSignable (Crypto era) (Hash (Crypto era) EraIndependentTxBody),
     Era era,
-    Core.Tx era ~ ValidatedTx era,
+    Core.Tx era ~ AlonzoTx era,
     Embed (Core.EraRule "DELEGS" era) (AlonzoLEDGER era),
     Embed (Core.EraRule "UTXOW" era) (AlonzoLEDGER era),
     Environment (Core.EraRule "UTXOW" era) ~ UtxoEnv era,
     State (Core.EraRule "UTXOW" era) ~ UTxOState era,
-    Signal (Core.EraRule "UTXOW" era) ~ ValidatedTx era,
+    Signal (Core.EraRule "UTXOW" era) ~ AlonzoTx era,
     Environment (Core.EraRule "DELEGS" era) ~ DelegsEnv era,
     State (Core.EraRule "DELEGS" era) ~ DPState (Crypto era),
     Signal (Core.EraRule "DELEGS" era) ~ Seq (DCert (Crypto era)),
@@ -135,7 +135,7 @@ instance
   STS (AlonzoLEDGER era)
   where
   type State (AlonzoLEDGER era) = LedgerState era
-  type Signal (AlonzoLEDGER era) = ValidatedTx era
+  type Signal (AlonzoLEDGER era) = AlonzoTx era
   type Environment (AlonzoLEDGER era) = LedgerEnv era
   type BaseM (AlonzoLEDGER era) = ShelleyBase
   type PredicateFailure (AlonzoLEDGER era) = LedgerPredicateFailure era

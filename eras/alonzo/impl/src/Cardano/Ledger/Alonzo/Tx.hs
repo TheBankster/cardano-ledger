@@ -102,6 +102,7 @@ import Cardano.Ledger.Alonzo.Scripts
 import Cardano.Ledger.Alonzo.TxBody
   ( AlonzoTxBody (..),
     AlonzoTxOut (..),
+    AlonzoEraTxBody (..),
     ScriptIntegrityHash,
     TxBody,
   )
@@ -171,6 +172,10 @@ data AlonzoTx era = AlonzoTx
   }
   deriving (Generic, Typeable)
 
+{-# DEPRECATED ValidatedTx "Use `AlonzoTx` instead" #-}
+
+type ValidatedTx era = AlonzoTx era
+
 instance CC.Crypto c => EraTx (AlonzoEra c) where
   type Tx (AlonzoEra c) = AlonzoTx (AlonzoEra c)
 
@@ -184,7 +189,7 @@ instance CC.Crypto c => EraTx (AlonzoEra c) where
 
   sizeTxG = sizeAlonzoTxG
 
-class EraTx era => AlonzoEraTx era where
+class (EraTx era, AlonzoEraTxBody era) => AlonzoEraTx era where
   isValidTxL :: Lens' (Core.Tx era) IsValid
 
 instance CC.Crypto c => AlonzoEraTx (AlonzoEra c) where

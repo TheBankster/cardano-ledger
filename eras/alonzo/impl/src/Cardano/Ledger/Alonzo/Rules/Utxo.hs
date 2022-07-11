@@ -22,8 +22,8 @@ import Cardano.Ledger.Alonzo.Data (DataHash, dataHashSize)
 import Cardano.Ledger.Alonzo.PParams (PParams' (..))
 import Cardano.Ledger.Alonzo.Rules.Utxos (ConcreteAlonzo, UTXOS, UtxosPredicateFailure)
 import Cardano.Ledger.Alonzo.Scripts (ExUnits (..), pointWiseExUnits)
-import Cardano.Ledger.Alonzo.Tx (ValidatedTx (..), totExUnits)
-import qualified Cardano.Ledger.Alonzo.Tx as Alonzo (ValidatedTx)
+import Cardano.Ledger.Alonzo.Tx (AlonzoTx (..), totExUnits)
+import qualified Cardano.Ledger.Alonzo.Tx as Alonzo (AlonzoTx)
 import qualified Cardano.Ledger.Alonzo.TxSeq as Alonzo (TxSeq)
 import Cardano.Ledger.Alonzo.TxWitness (Redeemers, TxWitness (txrdmrs'), nullRedeemers)
 import Cardano.Ledger.BaseTypes
@@ -269,7 +269,7 @@ vKeyLocked txOut =
 feesOK ::
   forall era.
   ( Era era,
-    Core.Tx era ~ Alonzo.ValidatedTx era,
+    Core.Tx era ~ Alonzo.AlonzoTx era,
     -- "collateral" to get inputs to pay the fees
     HasField "collateral" (Core.TxBody era) (Set (TxIn (Crypto era))),
     HasField "_minfeeA" (Core.PParams era) Natural,
@@ -364,7 +364,7 @@ validateOutsideForecast ::
   -- | Current slot number
   SlotNo ->
   SystemStart ->
-  ValidatedTx era ->
+  AlonzoTx era ->
   Test (UtxoPredicateFailure era)
 validateOutsideForecast pp ei slotNo sysSt tx =
   {-   (_,i_f) := txvldt tx   -}
@@ -485,7 +485,7 @@ utxoTransition ::
   ( Era era,
     ValidateScript era,
     ConcreteAlonzo era, -- Unlike the Tests, we are ony going to use this once, so we fix the Core.XX types
-    Core.Tx era ~ ValidatedTx era,
+    Core.Tx era ~ AlonzoTx era,
     Core.Witnesses era ~ TxWitness era,
     STS (AlonzoUTXO era),
     -- instructions for calling UTXOS from AlonzoUTXO
@@ -577,19 +577,19 @@ instance
   forall era.
   ( ValidateScript era,
     ConcreteAlonzo era, -- Unlike the Tests, we are only going to use this once, so we fix the Core.XX types
-    Core.Tx era ~ ValidatedTx era,
+    Core.Tx era ~ AlonzoTx era,
     Core.Witnesses era ~ TxWitness era,
     Embed (Core.EraRule "UTXOS" era) (AlonzoUTXO era),
     Environment (Core.EraRule "UTXOS" era) ~ Shelley.UtxoEnv era,
     State (Core.EraRule "UTXOS" era) ~ Shelley.UTxOState era,
-    Signal (Core.EraRule "UTXOS" era) ~ ValidatedTx era,
+    Signal (Core.EraRule "UTXOS" era) ~ AlonzoTx era,
     Inject (PredicateFailure (Core.EraRule "PPUP" era)) (PredicateFailure (Core.EraRule "UTXOS" era)),
     Era.TxSeq era ~ Alonzo.TxSeq era
   ) =>
   STS (AlonzoUTXO era)
   where
   type State (AlonzoUTXO era) = Shelley.UTxOState era
-  type Signal (AlonzoUTXO era) = ValidatedTx era
+  type Signal (AlonzoUTXO era) = AlonzoTx era
   type Environment (AlonzoUTXO era) = Shelley.UtxoEnv era
   type BaseM (AlonzoUTXO era) = ShelleyBase
   type PredicateFailure (AlonzoUTXO era) = UtxoPredicateFailure era

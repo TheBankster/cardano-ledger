@@ -34,7 +34,7 @@ import Cardano.Ledger.Alonzo.Scripts as Alonzo
 import Cardano.Ledger.Alonzo.Tx
   ( IsValid (..),
     ScriptPurpose (..),
-    ValidatedTx (..),
+    AlonzoTx (..),
     hashScriptIntegrity,
     minfee,
     rdptr,
@@ -398,7 +398,7 @@ instance Mock c => EraGen (AlonzoEra c) where
                   Just info -> addRedeemMap txbody (getRedeemer2 info) purpose ans -- Add it to the redeemer map
                   Nothing -> ans
 
-  constructTx bod wit auxdata = ValidatedTx bod wit (IsValid v) auxdata
+  constructTx bod wit auxdata = AlonzoTx bod wit (IsValid v) auxdata
     where
       v = all twoPhaseValidates (txscripts' wit)
       twoPhaseValidates script =

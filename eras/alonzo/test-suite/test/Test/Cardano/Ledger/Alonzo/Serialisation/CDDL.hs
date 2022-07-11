@@ -9,7 +9,7 @@ where
 import Cardano.Ledger.Alonzo (AlonzoEra)
 import Cardano.Ledger.Alonzo.Data (Data)
 import Cardano.Ledger.Alonzo.PParams (PParamsUpdate)
-import Cardano.Ledger.Alonzo.Tx (ValidatedTx)
+import Cardano.Ledger.Alonzo.Tx (AlonzoTx)
 import Cardano.Ledger.Alonzo.TxBody (TxOut)
 import Cardano.Ledger.Alonzo.TxWitness (Redeemers, TxWitness)
 import qualified Cardano.Ledger.Core as Core
@@ -36,7 +36,7 @@ tests n = withResource combinedCDDL (const (pure ())) $ \cddl ->
       cddlAnnotatorTest @(TxWitness A) n "transaction_witness_set",
       cddlTest @(PParamsUpdate A) n "protocol_param_update",
       cddlAnnotatorTest @(Redeemers A) n "[* redeemer]",
-      cddlAnnotatorTest @(ValidatedTx A) n "transaction"
+      cddlAnnotatorTest @(AlonzoTx A) n "transaction"
     ]
       <*> pure cddl
 

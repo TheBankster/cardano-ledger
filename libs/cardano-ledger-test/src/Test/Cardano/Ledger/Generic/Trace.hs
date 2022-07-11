@@ -19,7 +19,7 @@ module Test.Cardano.Ledger.Generic.Trace where
 import Cardano.Ledger.Address (Addr (..))
 import Cardano.Ledger.Alonzo.PParams (PParams' (..))
 import Cardano.Ledger.Alonzo.Rules.Utxow (UtxowPredicateFail (..))
-import Cardano.Ledger.Alonzo.Tx (ValidatedTx (body))
+import Cardano.Ledger.Alonzo.Tx (AlonzoTx (body))
 import qualified Cardano.Ledger.Babbage.PParams (PParams' (..))
 import Cardano.Ledger.Babbage.Rules.Ledger ()
 -- import Cardano.Ledger.Babbage.Rules.Utxo (BabbageUtxoPred (..))
@@ -127,7 +127,7 @@ import Test.Cardano.Ledger.Generic.PrettyCore
     scriptSummary,
   )
 import Test.Cardano.Ledger.Generic.Proof hiding (lift)
-import Test.Cardano.Ledger.Generic.TxGen (genValidatedTx)
+import Test.Cardano.Ledger.Generic.TxGen (genAlonzoTx)
 import Test.Cardano.Ledger.Shelley.Rules.TestChain (stakeDistr)
 import Test.Cardano.Ledger.Shelley.Utils (applySTSTest, runShelleyBase, testGlobals)
 import Test.QuickCheck
@@ -140,7 +140,7 @@ import Test.Tasty.QuickCheck (testProperty)
 --   has been applied. That model can be used to generate the next Tx
 genRsTxAndModel :: Reflect era => Proof era -> Int -> SlotNo -> GenRS era (Core.Tx era)
 genRsTxAndModel proof n slot = do
-  (_, tx) <- genValidatedTx proof slot
+  (_, tx) <- genAlonzoTx proof slot
   modifyModel (\model -> applyTx proof n slot model tx)
   pure tx
 

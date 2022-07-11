@@ -34,7 +34,7 @@ import Cardano.Ledger.Alonzo.TxInfo (ExtendedUTxO, ScriptResult (Fails, Passes))
 import Cardano.Ledger.Alonzo.TxWitness (TxWitness (..))
 import qualified Cardano.Ledger.Babbage.Collateral as Babbage
 import qualified Cardano.Ledger.Babbage.PParams as Babbage
-import Cardano.Ledger.Babbage.Tx (ValidatedTx (..))
+import Cardano.Ledger.Babbage.Tx (AlonzoTx (..))
 import qualified Cardano.Ledger.Babbage.Tx as Babbage
 import qualified Cardano.Ledger.Babbage.TxBody as Babbage
 import Cardano.Ledger.BaseTypes (ShelleyBase, epochInfo, systemStart)
@@ -68,7 +68,7 @@ type ConcreteBabbage era =
     Core.PParams era ~ Babbage.PParams era,
     Core.PParamsDelta era ~ Babbage.PParamsUpdate era,
     Core.TxOut era ~ Babbage.TxOut era,
-    Core.Tx era ~ ValidatedTx era,
+    Core.Tx era ~ AlonzoTx era,
     Core.Witnesses era ~ TxWitness era
   )
 
@@ -91,7 +91,7 @@ instance
   type BaseM (BabbageUTXOS era) = ShelleyBase
   type Environment (BabbageUTXOS era) = UtxoEnv era
   type State (BabbageUTXOS era) = UTxOState era
-  type Signal (BabbageUTXOS era) = ValidatedTx era
+  type Signal (BabbageUTXOS era) = AlonzoTx era
   type PredicateFailure (BabbageUTXOS era) = UtxosPredicateFailure era
   type Event (BabbageUTXOS era) = UtxosEvent era
   transitionRules = [utxosTransition]

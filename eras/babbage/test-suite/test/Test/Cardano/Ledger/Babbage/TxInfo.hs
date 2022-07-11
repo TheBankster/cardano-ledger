@@ -4,7 +4,7 @@ import Cardano.Ledger.Address (Addr (..), BootstrapAddress (..))
 import Cardano.Ledger.Alonzo.Data (Data (..), dataToBinaryData)
 import Cardano.Ledger.Alonzo.Language (Language (..))
 import Cardano.Ledger.Alonzo.PParams ()
-import Cardano.Ledger.Alonzo.Tx (IsValid (..), ValidatedTx (..))
+import Cardano.Ledger.Alonzo.Tx (IsValid (..), AlonzoTx (..))
 import Cardano.Ledger.Alonzo.TxInfo
   ( TranslationError (..),
     TxOutSource (..),
@@ -123,12 +123,12 @@ txb i mRefInp o =
       txnetworkid = SNothing
     }
 
-txBare :: TxIn StandardCrypto -> TxOut B -> ValidatedTx B
-txBare i o = ValidatedTx (txb i Nothing o) mempty (IsValid True) SNothing
+txBare :: TxIn StandardCrypto -> TxOut B -> AlonzoTx B
+txBare i o = AlonzoTx (txb i Nothing o) mempty (IsValid True) SNothing
 
-txRefInput :: TxIn StandardCrypto -> ValidatedTx B
+txRefInput :: TxIn StandardCrypto -> AlonzoTx B
 txRefInput refInput =
-  ValidatedTx (txb shelleyInput (Just refInput) shelleyOutput) mempty (IsValid True) SNothing
+  AlonzoTx (txb shelleyInput (Just refInput) shelleyOutput) mempty (IsValid True) SNothing
 
 hasReferenceInput :: VersionedTxInfo -> Bool
 hasReferenceInput (TxInfoPV1 _) = False
@@ -142,7 +142,7 @@ expectOneOutput :: PV2.TxOut -> VersionedTxInfo -> Bool
 expectOneOutput _ (TxInfoPV1 _) = False
 expectOneOutput o (TxInfoPV2 info) = PV2.txInfoOutputs info == [o]
 
-successfulTranslation :: Language -> ValidatedTx B -> (VersionedTxInfo -> Bool) -> Assertion
+successfulTranslation :: Language -> AlonzoTx B -> (VersionedTxInfo -> Bool) -> Assertion
 successfulTranslation lang tx f =
   case ctx of
     Right info -> assertBool "unexpected transaction info" (f info)
@@ -150,10 +150,10 @@ successfulTranslation lang tx f =
   where
     ctx = txInfo def lang ei ss utxo tx
 
-successfulV2Translation :: ValidatedTx B -> (VersionedTxInfo -> Bool) -> Assertion
+successfulV2Translation :: AlonzoTx B -> (VersionedTxInfo -> Bool) -> Assertion
 successfulV2Translation = successfulTranslation PlutusV2
 
-expectTranslationError :: Language -> ValidatedTx B -> TranslationError StandardCrypto -> Assertion
+expectTranslationError :: Language -> AlonzoTx B -> TranslationError StandardCrypto -> Assertion
 expectTranslationError lang tx expected =
   case ctx of
     Right _ -> assertFailure "This translation was expected to fail, but it succeeded."
@@ -161,10 +161,10 @@ expectTranslationError lang tx expected =
   where
     ctx = txInfo def lang ei ss utxo tx
 
-expectV1TranslationError :: ValidatedTx B -> TranslationError StandardCrypto -> Assertion
+expectV1TranslationError :: AlonzoTx B -> TranslationError StandardCrypto -> Assertion
 expectV1TranslationError = expectTranslationError PlutusV1
 
-expectV2TranslationError :: ValidatedTx B -> TranslationError StandardCrypto -> Assertion
+expectV2TranslationError :: AlonzoTx B -> TranslationError StandardCrypto -> Assertion
 expectV2TranslationError = expectTranslationError PlutusV2
 
 errorTranslate :: (HasCallStack, Show a) => String -> Either a b -> b

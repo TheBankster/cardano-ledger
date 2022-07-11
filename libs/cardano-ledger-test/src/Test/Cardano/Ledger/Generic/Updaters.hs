@@ -22,7 +22,7 @@ import qualified Cardano.Ledger.Alonzo.Tx as Alonzo
 import qualified Cardano.Ledger.Alonzo.TxBody as Alonzo (TxOut (..))
 import Cardano.Ledger.Alonzo.TxWitness (Redeemers (..), TxDats (..), TxWitness (..))
 import qualified Cardano.Ledger.Babbage.PParams as Babbage (PParams' (..))
-import qualified Cardano.Ledger.Babbage.Tx as Babbage (ValidatedTx (..))
+import qualified Cardano.Ledger.Babbage.Tx as Babbage (AlonzoTx (..))
 import qualified Cardano.Ledger.Babbage.TxBody as Babbage (Datum (..), TxBody (..), TxOut (..))
 import Cardano.Ledger.Coin (Coin (Coin, unCoin))
 import qualified Cardano.Ledger.Core as Core
@@ -123,22 +123,22 @@ updateTx (wit@(Mary _)) (tx@(Shelley.Tx b w d)) dt =
     WitnessesI wfields -> Shelley.Tx b (newWitnesses override wit wfields) d
     AuxData faux -> Shelley.Tx b w faux
     Valid _ -> tx
-updateTx wit@(Alonzo _) (Alonzo.ValidatedTx b w iv d) dt =
+updateTx wit@(Alonzo _) (Alonzo.AlonzoTx b w iv d) dt =
   case dt of
-    Body fbody -> Alonzo.ValidatedTx fbody w iv d
-    BodyI bfields -> Alonzo.ValidatedTx (newTxBody wit bfields) w iv d
-    Witnesses fwit -> Alonzo.ValidatedTx b fwit iv d
-    WitnessesI wfields -> Alonzo.ValidatedTx b (newWitnesses override wit wfields) iv d
-    AuxData faux -> Alonzo.ValidatedTx b w iv faux
-    Valid iv' -> Alonzo.ValidatedTx b w iv' d
-updateTx wit@(Babbage _) (Babbage.ValidatedTx b w iv d) dt =
+    Body fbody -> Alonzo.AlonzoTx fbody w iv d
+    BodyI bfields -> Alonzo.AlonzoTx (newTxBody wit bfields) w iv d
+    Witnesses fwit -> Alonzo.AlonzoTx b fwit iv d
+    WitnessesI wfields -> Alonzo.AlonzoTx b (newWitnesses override wit wfields) iv d
+    AuxData faux -> Alonzo.AlonzoTx b w iv faux
+    Valid iv' -> Alonzo.AlonzoTx b w iv' d
+updateTx wit@(Babbage _) (Babbage.AlonzoTx b w iv d) dt =
   case dt of
-    Body fbody -> Babbage.ValidatedTx fbody w iv d
-    BodyI bfields -> Babbage.ValidatedTx (newTxBody wit bfields) w iv d
-    Witnesses fwit -> Babbage.ValidatedTx b fwit iv d
-    WitnessesI wfields -> Babbage.ValidatedTx b (newWitnesses override wit wfields) iv d
-    AuxData faux -> Babbage.ValidatedTx b w iv faux
-    Valid iv' -> Babbage.ValidatedTx b w iv' d
+    Body fbody -> Babbage.AlonzoTx fbody w iv d
+    BodyI bfields -> Babbage.AlonzoTx (newTxBody wit bfields) w iv d
+    Witnesses fwit -> Babbage.AlonzoTx b fwit iv d
+    WitnessesI wfields -> Babbage.AlonzoTx b (newWitnesses override wit wfields) iv d
+    AuxData faux -> Babbage.AlonzoTx b w iv faux
+    Valid iv' -> Babbage.AlonzoTx b w iv' d
 
 newTx :: Proof era -> [TxField era] -> Core.Tx era
 newTx era = List.foldl' (updateTx era) (initialTx era)

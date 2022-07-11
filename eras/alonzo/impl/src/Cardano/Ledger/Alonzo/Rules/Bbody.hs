@@ -21,7 +21,7 @@ where
 
 import Cardano.Binary (FromCBOR (..), ToCBOR (..))
 import Cardano.Ledger.Alonzo.Scripts (ExUnits (..), pointWiseExUnits)
-import qualified Cardano.Ledger.Alonzo.Tx as Alonzo (ValidatedTx, totExUnits)
+import qualified Cardano.Ledger.Alonzo.Tx as Alonzo (AlonzoTx, totExUnits)
 import Cardano.Ledger.Alonzo.TxSeq (txSeqTxns)
 import qualified Cardano.Ledger.Alonzo.TxSeq as Alonzo (TxSeq)
 import Cardano.Ledger.Alonzo.TxWitness (TxWitness)
@@ -136,7 +136,7 @@ bbodyTransition ::
     HasField "_maxBlockExUnits" (Core.PParams era) ExUnits,
     Era era, -- supplies WellFormed HasField, and Crypto constraints
     Era.TxSeq era ~ Alonzo.TxSeq era,
-    Core.Tx era ~ Alonzo.ValidatedTx era,
+    Core.Tx era ~ Alonzo.AlonzoTx era,
     Core.Witnesses era ~ TxWitness era
   ) =>
   TransitionRule (someBBODY era)
@@ -201,13 +201,13 @@ instance
     Embed (Core.EraRule "LEDGERS" era) (AlonzoBBODY era),
     Environment (Core.EraRule "LEDGERS" era) ~ LedgersEnv era,
     State (Core.EraRule "LEDGERS" era) ~ LedgerState era,
-    Signal (Core.EraRule "LEDGERS" era) ~ Seq (Alonzo.ValidatedTx era),
+    Signal (Core.EraRule "LEDGERS" era) ~ Seq (Alonzo.AlonzoTx era),
     Era era,
-    Core.Tx era ~ Alonzo.ValidatedTx era,
+    Core.Tx era ~ Alonzo.AlonzoTx era,
     HasField "_d" (Core.PParams era) UnitInterval,
     HasField "_maxBlockExUnits" (Core.PParams era) ExUnits,
     Era.TxSeq era ~ Alonzo.TxSeq era,
-    Core.Tx era ~ Alonzo.ValidatedTx era,
+    Core.Tx era ~ Alonzo.AlonzoTx era,
     Core.Witnesses era ~ TxWitness era,
     SupportsSegWit era
   ) =>

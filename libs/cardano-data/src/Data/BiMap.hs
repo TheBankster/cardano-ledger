@@ -117,9 +117,9 @@ biMapEmpty :: BiMap v k v
 biMapEmpty = MkBiMap Map.empty Map.empty
 
 -- | Make a BiMap from a list of pairs.
--- The combine function comb=(\ earlier later -> later) will let elements
+-- The combine function comb=(\\ earlier later -> later) will let elements
 -- later in the list override ones earlier in the list, and comb =
--- (\ earlier later -> earlier) will keep the vaue that appears first in the list
+-- (\\ earlier later -> earlier) will keep the vaue that appears first in the list
 
 biMapFromList :: (Ord k, Ord v) => (v -> v -> v) -> [(k, v)] -> BiMap v k v
 biMapFromList comb xs = foldr addEntry biMapEmpty xs

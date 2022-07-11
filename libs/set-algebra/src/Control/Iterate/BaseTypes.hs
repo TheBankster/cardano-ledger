@@ -19,6 +19,8 @@ import Data.Set (Set)
 import qualified Data.Set as Set
 import qualified Data.UMap as UM
 
+--  $ClassesForSetAlgebra
+ 
 -- ================= The Iter class =================================================
 -- | The Set algebra include types that encode finite sets and maps of some type. They
 -- have a finite domain, and for each domain element they pair a single range
@@ -72,10 +74,13 @@ class Basic f where
 
 -- ===============================================================================================
 
+-- $Deep embedding
+ 
 -- | BaseRep witnesses Basic types. I.e. those types that are instances of both Basic and Iter.
 --   Pattern matching against a constructor of type BaseRep, determines which base type. For example
 --   data Tag f k v = Tag (BaseRep f k v) (f k v)
 --   case Tag MapR x ->  -- here we know x :: Map.Map k v
+
 data BaseRep f k v where
   MapR :: Basic Map.Map => BaseRep Map.Map k v
   SetR :: Basic Sett => BaseRep Sett k ()

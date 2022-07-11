@@ -94,7 +94,7 @@ instance Show (Exp t) where
 
 -- =================================================================
 
--- | Basic types are those that can be embedded into Exp.
+-- | Basic types are those that can be tranformed into Exp.
 -- The HasExp class, encodes how to lift a Basic type into an Exp.
 -- The function 'toExp' will build a typed Exp for that Basic type.
 -- This will be really usefull in the smart constructors.

@@ -34,6 +34,8 @@ import NoThunks.Class (NoThunks (..))
 -- 4) Missing operation 'union', make performant versions of ∪ and ⨃ hard.
 -- 5) So we roll our own which is really a (Data.Map k v) with an index that maps v to Set{k}
 
+
+-- | Maps for Bijections. Use 'biMapFromList' and 'biMapEmpty' to construct concrete values.
 data BiMap v a b where MkBiMap :: (v ~ b) => !(Map.Map a b) -> !(Map.Map b (Set.Set a)) -> BiMap v a b
 
 --  ^   the 1st and 3rd parameter must be the same:             ^   ^
@@ -110,10 +112,11 @@ insertWithBiMap comb k v (MkBiMap f b) = MkBiMap (Map.insertWith (mapflip comb) 
   where
     (oldv, newv) = case Map.lookup k f of Nothing -> (v, v); Just v2 -> (v2, comb v2 v)
 
+-- | An empty BiMap
 biMapEmpty :: BiMap v k v
 biMapEmpty = MkBiMap Map.empty Map.empty
 
--- Make a BiMap from a list of pairs.
+-- | Make a BiMap from a list of pairs.
 -- The combine function comb=(\ earlier later -> later) will let elements
 -- later in the list override ones earlier in the list, and comb =
 -- (\ earlier later -> earlier) will keep the vaue that appears first in the list
@@ -142,10 +145,10 @@ biMapFromAscDistinctList xs = MkBiMap bmForward bmBackward
     bmForward = Map.fromDistinctAscList xs
     bmBackward = foldr (uncurry $ flip addBack) Map.empty xs
 
--- This synonym makes (BiMap v k v) appear as an ordinary Binary type contructor: (Bimap k v)
+-- | This synonym makes (BiMap v k v) appear as an ordinary Binary type contructor: (Bimap k v)
 type Bimap k v = BiMap v k v
 
--- This operation is very fast (Log n) on BiMap, but extremely slow on other collections.
+-- | This operation is very fast (Log n) on BiMap, but extremely slow on other collections.
 removeval :: (Ord k, Ord v) => v -> BiMap v k v -> BiMap v k v
 removeval v (m@(MkBiMap m1 m2)) =
   case Map.lookup v m2 of

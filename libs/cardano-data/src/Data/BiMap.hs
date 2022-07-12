@@ -6,6 +6,9 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
+-- | A 'BiMap' is a pair of maps @(Map k v, Map v (Set k))@ where we call the first one the forwards map,
+--   and the second one the backwards map. The pair form a bijection. The advantage of using 'BiMap' is that
+--   changes to the forwards map, are automatically reflected in the backwards map.
 module Data.BiMap where
 
 import Cardano.Binary
@@ -36,13 +39,14 @@ import NoThunks.Class (NoThunks (..))
 
 
 -- | Maps for Bijections. Use 'biMapFromList' and 'biMapEmpty' to construct concrete values.
+--   While 'BiMap' has three type parameters, we enfoce that the 1st and 3rd parameter are always the same.
 data BiMap v a b where MkBiMap :: (v ~ b) => !(Map.Map a b) -> !(Map.Map b (Set.Set a)) -> BiMap v a b
 
---  ^   the 1st and 3rd parameter must be the same:             ^   ^
-
+-- | Extract the forwards map from a 'BiMap'
 biMapToMap :: BiMap v a b -> Map a b
 biMapToMap (MkBiMap m _) = m
 
+-- | Build a 'BiMap' from a 'Data.Map'. Construct the associated backwards map as the forward map is populated.
 biMapFromMap ::
   (Ord k, Ord v) => Map k v -> BiMap v k v
 biMapFromMap bmForward =
@@ -98,15 +102,21 @@ instance (Eq k, Eq v) => Eq (BiMap u k v) where
 instance (Show k, Show v) => Show (BiMap u k v) where
   show (MkBiMap l _r) = show l
 
+-- | Add a value and a key to a @(Map value (Set key))@, intended that this is used to alter the backwards map of a 'BiMap'.
 addBack :: (Ord v, Ord k) => v -> k -> Map.Map v (Set.Set k) -> Map.Map v (Set.Set k)
 addBack newv k m = Map.insertWith Set.union newv (Set.singleton k) m
 
+-- | Retract (or remove) a value from a @(Map value (Set key))@, intended that this is used to alter the backwards map of a 'BiMap'.
 retract :: (Ord v, Ord k) => v -> k -> Map.Map v (Set.Set k) -> Map.Map v (Set.Set k)
 retract oldv k m = Map.adjust (Set.delete k) oldv m
 
+-- | Replace an old value with a new value associated with a given key from a @(Map value (Set key))@.
+--   Intended that this is used to alter the backwards map of a 'BiMap'
 insertBackwards :: (Ord k, Ord v) => v -> v -> k -> Map.Map v (Set.Set k) -> Map.Map v (Set.Set k)
 insertBackwards oldv newv k m = addBack newv k (retract oldv k m)
 
+-- | Insert a key value pair into a 'BiMap', Use the combining function to choose between new and old value if the
+-- value for that key already exists.
 insertWithBiMap :: (Ord k, Ord v) => (v -> v -> v) -> k -> v -> BiMap v k v -> BiMap v k v
 insertWithBiMap comb k v (MkBiMap f b) = MkBiMap (Map.insertWith (mapflip comb) k v f) (insertBackwards oldv newv k b)
   where

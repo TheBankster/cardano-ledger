@@ -20,8 +20,9 @@ import qualified Data.Set as Set
 import qualified Data.UMap as UM
 
 --  $ClassesForSetAlgebra
- 
+
 -- ================= The Iter class =================================================
+
 -- | The Set algebra include types that encode finite sets and maps of some type. They
 -- have a finite domain, and for each domain element they pair a single range
 -- element (unit for sets). We are interested in those finite maps that can iterate their
@@ -37,9 +38,9 @@ class Iter f where
   -- | The next few methods can all be defined via nxt and lub, but for base types there often exist
   -- much more efficent means, so the default definitions should be overwritten for such basic types.
   -- For compound types with Guards, these are often the only way to define them.
-
   hasNxt :: f a b -> Maybe (a, b, f a b)
   hasNxt f = hasElem (nxt f)
+
   hasLub :: Ord k => k -> f k b -> Maybe (k, b, f k b)
   hasLub a f = hasElem (lub a f)
   haskey :: Ord key => key -> f key b -> Bool
@@ -67,20 +68,21 @@ class Basic f where
 
   -- | remove the pair with key 'k', if it is there.
   removekey :: (Ord k) => k -> f k v -> f k v
+
   -- | the set of keys
   domain :: Ord k => f k v -> Set k
+
   -- | the set of values.
   range :: Ord v => f k v -> Set v
 
 -- ===============================================================================================
 
 -- $Deep embedding
- 
+
 -- | BaseRep witnesses Basic types. I.e. those types that are instances of both Basic and Iter.
 --   Pattern matching against a constructor of type BaseRep, determines which base type. For example
 --   data Tag f k v = Tag (BaseRep f k v) (f k v)
 --   case Tag MapR x ->  -- here we know x :: Map.Map k v
-
 data BaseRep f k v where
   MapR :: Basic Map.Map => BaseRep Map.Map k v
   SetR :: Basic Sett => BaseRep Sett k ()
@@ -106,8 +108,8 @@ instance Show (BaseRep f k v) where
 -- Now for each Basic type we provide instances
 -- ==================================================================
 
--- $MapAndSetTypes
- 
+-- MapAndSetTypes
+
 -- ========== Basic List ==============
 
 -- | Maps stored as lists. Sorted [(key,value)] pairs, with no duplicate keys.
@@ -121,7 +123,6 @@ deriving instance (Eq k, Eq v) => Eq (List k v)
 
 instance (Show k, Show v) => Show (List k v) where
   show (UnSafeList xs) = show xs
-
 
 instance Basic List where
   addkv (k, v) (UnSafeList xs) comb = UnSafeList (insert xs)
@@ -159,7 +160,7 @@ instance Iter List where -- List is the only basic instance with non-linear nxt 
   hasNxt (UnSafeList []) = Nothing
   hasNxt (UnSafeList (((k, v) : ps))) = Just (k, v, UnSafeList ps)
 
--- ================ Basic Single =============== 
+-- ================ Basic Single ===============
 
 -- | Maps and sets with zero or a single pair. Iteration is trivial. Succeeds at most once.
 data Single k v where
@@ -351,6 +352,7 @@ instance
   lookup = UM.lookup
 
 -- ===========================================================================
+
 -- | Every iterable type type forms an isomorphism with some Base type. For most
 -- Base types the isomorphism is the identity in both directions, but for some,
 -- like List and Sett, the embeddings are not the trivial identities because the

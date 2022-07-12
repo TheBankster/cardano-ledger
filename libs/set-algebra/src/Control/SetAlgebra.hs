@@ -24,19 +24,21 @@
 -- 'HasExp', 'Iter', and 'Embed'.
 --
 -- 1. @(Basic f)@ meaning @(f k v)@ must be interpreted as a map or set, with two type parameters @k@ and @v@.
--- 2. @(HasExp t (f k v))@  meaning the actual type @t@ of the operands @x@ and @y@ can be interpreted as a @Basic@ type @f@
--- 3. @(Iter f)@ meaning the @Basic@ type @f@ supports certain (usually fast) operations, that can be combined.
+-- 2. @(HasExp t (f k v))@  meaning a value of type @t@ can be lifted to an expression of type @(Exp (f k v))@, where @(Basic f)@.
+-- 3. @(Iter f)@ meaning the @Basic@ type constructor @f@ supports certain (usually fast) operations, that can be combined.
 -- 4. @(Embed concrete f)@ meaning the types @concrete@ and @(f k v)@ form an isomorphism.
 --
--- Available operands to create set algebra expressions are 'dom', 'rng', 'dexclude', 'drestrict', 'rexclude', 'rrestrict',
--- 'unionright', 'unionleft', 'unionplus', 'singleton', 'setSingleton', 'intersect', 'subset', 'keyeq', '(◁)', '(⋪)', '(▷)', '(⋫)',
--- '(∈)', '(∉)', '(∪)', '(⨃)', '(∪+)', '(∩)', '(⊆)', '(≍)', '(➖)' .
+-- Available operands to create set algebra expressions are 'dom', 'rng', 'dexclude',  '(⋪)', 'drestrict', '(◁)',
+-- 'rexclude', '(⋫)', 'rrestrict',  '(▷)',
+-- 'unionright',  '(⨃)', 'unionleft','(∪)', 'unionplus',  '(∪+)','singleton', 'setSingleton',
+-- 'intersect', '(∩)',  'subset',  '(⊆)', 'keyeq',  '(≍)',
+-- '(∈)', '(∉)',  'setdiff', '(➖)' .
 --
 -- The key abstraction that makes set algebra work is the self typed GADT: @(Exp t)@, that defines a tree that
 -- represents a deep embedding of all set algebra expressions representing maps or sets of type @t@.
 -- @Exp@ is a typed symbolic representation of queries we may ask. It allows us to introspect a query.
 -- The strategy is to
--- 
+--
 -- 1. Define Exp so all queries can be represented.
 -- 2. Define smart constructors that "parse" the surface syntax, and build a typed Exp
 -- 3. Write an evaluate function:  eval:: Exp t -> t
@@ -47,13 +49,11 @@
 -- all the class instances are automatically solved. If you get an error involving a class, then it is most
 -- probably the case that the type of the operands cannot be properly inferred.
 module Control.SetAlgebra
-  (
-
-    -- * In addition to 'Data.Map.Map' and 'Data.Set.Set', types interpretable as maps and sets.
+  ( -- * In addition to 'Data.Map.Map' and 'Data.Set.Set', types interpretable as maps and sets.
     -- $MapAndSetTypes
     List,
-    BiMap, 
-    Bimap, 
+    BiMap,
+    Bimap,
     Single (..),
 
     -- * Classes supporting abstract constructors of Set Algebra Expressions. These show up in the types of overloaded functions.
@@ -64,7 +64,7 @@ module Control.SetAlgebra
     Embed (..),
 
     -- * Types implementing a deep embedding of set algebra expressions
-    -- $Deep embedding
+    -- $Deep
     BaseRep (..),
     Exp (Base),
     -- Evaluate an abstract Set Algebra Expression to the Set (Map) it represents.
@@ -72,9 +72,6 @@ module Control.SetAlgebra
 
     -- * Operators to build maps and sets,  useable as Set Algebra Expressions
     -- $setoperators
-
-    -- | #setoperators#
-    
     dom,
     rng,
     dexclude,
@@ -105,7 +102,7 @@ module Control.SetAlgebra
     (|>),
     (➖),
     keysEqual,
-    
+
     -- * Miscellaneous operators, including smart constructors for 'BiMap' and 'List', whose constructors are hidden.
     -- $Misc
     materialize,
@@ -132,6 +129,7 @@ import Control.Iterate.Exp
     rng,
     rrestrict,
     setSingleton,
+    setdiff,
     singleton,
     subset,
     unionleft,

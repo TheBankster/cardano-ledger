@@ -374,7 +374,6 @@ addp combine (k, v) xs = addkv (k, v) xs combine
 -- The combine function comb = (\\ earlier later -> later) will let values
 -- later in the list override ones earlier in the list, and comb =
 -- (\\ earlier later -> earlier) will keep the value that appears first in the list
-
 fromList :: Ord k => BaseRep f k v -> (v -> v -> v) -> [(k, v)] -> f k v
 fromList MapR combine xs = Map.fromListWith combine xs
 fromList ListR combine xs = fromPairs combine xs

@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -5,7 +6,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE ConstraintKinds #-}
 
 -- | This module provides deep embeddings of three things
 --   1) Exp is a deep embedding of expressions over Sets and Maps as a typed data structure.
@@ -33,7 +33,6 @@ import Data.UMap (UnifiedView (..), View)
 import Text.PrettyPrint.ANSI.Leijen (Doc, align, parens, text, vsep, (<+>))
 import Prelude hiding (lookup)
 
-
 -- $Deep embedding
 
 -- ================================================================================================
@@ -43,15 +42,14 @@ import Prelude hiding (lookup)
 -- | The self typed GADT: Exp, that encodes the shape of Set expressions. A deep embedding.
 -- Exp is a typed Symbolic representation of queries we may ask. It allows us to introspect a query
 -- The strategy is to
--- 
+--
 -- 1. Define Exp so all queries can be represented.
 -- 2. Define smart constructors that "parse" the surface syntax, and build a typed Exp
 -- 3. Write an evaluate function:  eval:: Exp t -> t
 -- 4. "eval" can introspect the code and apply efficient domain and type specific translations
 -- 5.  Use the (Iter f) class to evaluate some Exp that can benefit from its efficient nature.
---
 data Exp t where
-  Base :: (Ord k, Basic f, Iter f) => BaseRep f k v -> f k v -> Exp (f k v) 
+  Base :: (Ord k, Basic f, Iter f) => BaseRep f k v -> f k v -> Exp (f k v)
   Dom :: Ord k => Exp (f k v) -> Exp (Sett k ())
   Rng :: (Ord k, Ord v) => Exp (f k v) -> Exp (Sett v ())
   DRestrict :: (Ord k, Iter g) => Exp (g k ()) -> Exp (f k v) -> Exp (f k v)
@@ -129,11 +127,11 @@ instance (Ord k, Ord v) => HasExp (Bimap k v) (Bimap k v) where
 type OrdAll coin cred pool ptr k = (Ord k, Ord coin, Ord cred, Ord ptr, Ord pool)
 
 instance
-  ( UnifiedView coin cred pool ptr k v
-  , OrdAll coin cred pool ptr k
-  , Monoid coin
-  ) 
-  => HasExp
+  ( UnifiedView coin cred pool ptr k v,
+    OrdAll coin cred pool ptr k,
+    Monoid coin
+  ) =>
+  HasExp
     (View coin cred pool ptr k v)
     (View coin cred pool ptr k v)
   where
@@ -162,7 +160,7 @@ rExclude y x = RExclude y x
 -- ==========================================================================================
 -- Smart constructors build typed Exp with real values at the leaves (the Base constuctor)
 
--- $setoperators
+-- setoperators
 
 -- (⊆),
 -- (∩),
@@ -287,7 +285,6 @@ data Expr env t where
   FST :: Expr e (a, b) -> Expr e a
   SND :: Expr e (a, b) -> Expr e b
   Lit :: Show t => t -> Expr env t
-
 
 -- | A typed deep embedding of Haskell functions with type @t@.
 --   Be carefull, no pattern P1, P2, P3, P4 should appear MORE THAN ONCE in a Lam.
@@ -417,6 +414,7 @@ lift f = Fun (Lift f) f
 -- ==============================================================
 
 -- =================================================================================
+
 -- | Query is a single datatype that describes a low-level language that can be
 -- used to build compound iterators, from other iterators.
 data Query k v where

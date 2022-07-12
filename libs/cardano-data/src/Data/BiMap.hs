@@ -37,7 +37,6 @@ import NoThunks.Class (NoThunks (..))
 -- 4) Missing operation 'union', make performant versions of ∪ and ⨃ hard.
 -- 5) So we roll our own which is really a (Data.Map k v) with an index that maps v to Set{k}
 
-
 -- | Maps for Bijections. Use 'biMapFromList' and 'biMapEmpty' to construct concrete values.
 --   While 'BiMap' has three type parameters, we enfoce that the 1st and 3rd parameter are always the same.
 data BiMap v a b where MkBiMap :: (v ~ b) => !(Map.Map a b) -> !(Map.Map b (Set.Set a)) -> BiMap v a b
@@ -130,7 +129,6 @@ biMapEmpty = MkBiMap Map.empty Map.empty
 -- The combine function comb=(\\ earlier later -> later) will let elements
 -- later in the list override ones earlier in the list, and comb =
 -- (\\ earlier later -> earlier) will keep the vaue that appears first in the list
-
 biMapFromList :: (Ord k, Ord v) => (v -> v -> v) -> [(k, v)] -> BiMap v k v
 biMapFromList comb xs = foldr addEntry biMapEmpty xs
   where

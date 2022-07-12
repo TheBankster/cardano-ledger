@@ -23,6 +23,7 @@ module Data.UMap
     tripDelegation,
     UMap (..),
     umInvariant,
+
     -- * View and its components
     -- $VIEW
     View (..),
@@ -35,14 +36,14 @@ module Data.UMap
     domRestrictedView,
     zero,
     zeroMaybe,
-    
+
     -- * Operations to implement the 'Iter' class
     -- $ITER
     mapNext,
     mapLub,
     next,
     leastUpperBound,
-    
+
     -- * Set and Map operations on Views
     -- $VIEWOPS
     empty,
@@ -69,7 +70,6 @@ module Data.UMap
     -- $Tag
     Tag (..),
     UnifiedView (..),
-
     --  * Derived functions
     --  $DFUNS
     findWithDefault,
@@ -99,7 +99,7 @@ import NoThunks.Class (NoThunks (..))
 import Prelude hiding (lookup)
 
 -- ===================================================================
--- $UMAP
+-- UMAP
 
 -- | a 'Trip' compactly represents the range of 3 maps with the same domain as a single triple.
 --   The space compacting Trip datatype, and the pattern Triple are equivalent to:
@@ -220,10 +220,10 @@ umInvariant stake ptr (UnifiedMap tripmap ptrmap) = forwards && backwards
 
 -- =====================================================
 
--- $VIEW
+-- VIEW
 
 -- | A 'View' lets one view a 'UMap' in three different ways
---   A view with type @(View coin cred poolparam ptr key value)@ can be used like a @(Map key value)@ 
+--   A view with type @(View coin cred poolparam ptr key value)@ can be used like a @(Map key value)@
 data View coin cr pl ptr k v where
   Rewards ::
     !(UMap coin cr pl ptr) ->
@@ -367,7 +367,7 @@ zeroMaybe t = Just t
 -- ===============================================================
 -- Iter Operations
 
--- $ITER
+-- ITER
 
 mapNext :: Map k v -> Maybe (k, v, Map k v)
 mapNext m =
@@ -420,7 +420,7 @@ leastUpperBound ptr (Ptrs (UnifiedMap tripmap ptrmap)) =
 -- ==============================================================
 -- Basic operations on ViewMap
 
--- $VIEWOPS
+-- VIEWOPS
 
 empty :: UMap coin cr pool ptr
 empty = UnifiedMap Map.empty Map.empty
@@ -755,9 +755,8 @@ instance
 
 -- =================================================================
 
-
 -- ===================================================
--- $Tag
+-- Tag
 
 data Tag coin cred pool ptr k v where
   Rew :: Tag coin cred pool ptr cred coin
@@ -770,7 +769,7 @@ class UnifiedView coin cred pool ptr k v where
 -- ==================================================
 -- derived operations
 
--- $DFUNS
+-- DFUNS
 
 -- | Find the value associated with a key from a View, return the default if the key is not there.
 findWithDefault :: (Ord cred, Ord ptr) => a -> k -> View coin cred pool ptr k a -> a
